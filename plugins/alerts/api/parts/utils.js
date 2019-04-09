@@ -61,15 +61,8 @@ utils.compareValues = function(alertConfig, data, keyName, appIndex) {
 
     const percentNum = (todayValue / lastDateValue - 1) * 100;
     matched = alertConfig.compareType && alertConfig.compareType.indexOf('increased') >= 0
-        ? percentNum > compareValue : percentNum < compareValue;
+        ? percentNum >= compareValue : percentNum <= -compareValue;
 
-    // if (alertConfig.alertType.indexOf('today_compare_previous') > 0) {
-    // 	const percentNum = (todayValue / lastDateValue - 1) * 100
-    // 	matched = alertConfig.compareType === 'more' ? percentNum > compareValue : percentNum <= compareValue
-    // }
-    // if (alertConfig.alertType.indexOf('today_compare_a_value') > 0) {
-    // 	matched = alertConfig.compareType === 'more' ? todayValue > compareValue : todayValue <= compareValue
-    // }
     return { currentApp, todayValue, lastDateValue, matched };
 };
 
@@ -153,8 +146,20 @@ utils.getAppInfo = function(appID) {
 };
 
 utils.getDashboardUserEmail = function(userIds) {
-    const userIdsObject = userIds.map((id)=> common.db.ObjectID(id));
+    const regex = new RegExp('^([a-z0-9!#$%&\'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&\'*+/=?^_`{|}~-]+)*@' +
+    '(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)$', 'i');
+    let isEmailAddress = true;
+    userIds.forEach((item) => {
+        const match = item.match(regex);
+        if (!match) {
+            isEmailAddress = false;
+        }
+    });
     return new Promise(function(resolve, reject) {
+        if (isEmailAddress) {
+            return resolve(userIds);
+        }
+        const userIdsObject = userIds.map((id)=> common.db.ObjectID(id));
         return common.db.collection('members').find({ _id: {$in: userIdsObject}}).toArray(function(err, members) {
             if (err) {
                 return reject(err);
@@ -167,6 +172,9 @@ utils.getDashboardUserEmail = function(userIds) {
 utils.checkAppLocalTimeHour = function(appId, targetHour) {
     return new Promise(function(resolve, reject) {
         utils.getAppInfo(appId).then((app)=> {
+            if (!(app && app.timezone)) {
+                return false;
+            }
             const appTime = new moment().tz(app.timezone);
             const hour = appTime.hours();
             const result = hour === targetHour;

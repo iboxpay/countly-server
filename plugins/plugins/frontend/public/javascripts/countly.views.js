@@ -282,7 +282,7 @@ window.ConfigurationsView = countlyView.extend({
                 select += '<div class="text"></div>';
             }
             else {
-                select += '<div class="text"><div class="flag" style="background-image:url(images/flags/' + value.toLowerCase() + '.png)"></div>' + zones[value].n + '</div>';
+                select += '<div class="text"><div class="flag ' + value.toLowerCase() + '" style="background-image:url(images/flags/' + value.toLowerCase() + '.png)"></div>' + zones[value].n + '</div>';
             }
 
             select += '</div>' +
@@ -292,7 +292,7 @@ window.ConfigurationsView = countlyView.extend({
                 '<div>';
 
             for (var i in zones) {
-                select += '<div data-value="' + i + '" class="segmentation-option item"><div class="flag" style="background-image:url(images/flags/' + i.toLowerCase() + '.png)"></div>' + zones[i].n + '</div>';
+                select += '<div data-value="' + i + '" class="segmentation-option item"><div class="flag ' + i.toLowerCase() + '" style="background-image:url(images/flags/' + i.toLowerCase() + '.png)"></div>' + zones[i].n + '</div>';
             }
 
             select += '</div>' +
@@ -344,7 +344,7 @@ window.ConfigurationsView = countlyView.extend({
                 select += '<div class="text" data-localize="configs.logs.' + value + '">' + jQuery.i18n.map["configs.logs." + value] + '</div>';
             }
             else {
-                select += '<div class="text" data-localzie="configs.logs.warn">' + jQuery.i18n.map["configs.logs.warn"] + '</div>';
+                select += '<div class="text" data-localize="configs.logs.warn">' + jQuery.i18n.map["configs.logs.warn"] + '</div>';
             }
             select += '</div>' +
                 '<div class="right combo"></div>' +
@@ -373,6 +373,8 @@ window.ConfigurationsView = countlyView.extend({
         this.registerInput("apps.timezone", function() {
             return null;
         });
+
+        this.registerLabel("frontend.google_maps_api_key", "configs.frontend-google_maps_api_key");
     },
     beforeRender: function() {
         if (this.template) {
@@ -851,6 +853,8 @@ window.ConfigurationsView = countlyView.extend({
                     $fixedHeader.css({ width: width });
                 }
             });
+
+            $("#config-row-google_maps_api_key-frontend").parent().append($("#config-row-google_maps_api_key-frontend"));
         }
     },
     updateConfig: function(id, value) {
