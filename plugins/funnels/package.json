@@ -1,0 +1,24 @@
+{
+  "name": "countly-funnels",
+  "title": "Funnels",
+  "version": "0.0.1",
+  "description": "Track step by step goal completion rates inside your application",
+  "author": "iboxpay.com",
+  "homepage": "https://count.ly/plugins/",
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/iboxpay/countly-server.git"
+  },
+  "bugs": {
+    "url": "http://github.com/iboxpay/countly-server/issues"
+  },
+  "keywords": [
+    "iboxpay",
+    "analytics",
+    "mobile",
+    "plugins",
+    "template"
+  ],
+  "dependencies": {},
+  "private": true
+}

@@ -1,0 +1,24 @@
+{
+  "name": "countly-drill",
+  "title": "Drill",
+  "version": "0.0.1",
+  "description": "Countly Drill is designed to give answers to complex questions by letting you drill down into granular data without writing any database queries.",
+  "author": "iboxpay.com",
+  "homepage": "https://count.ly/plugins/",
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/iboxpay/countly-server.git"
+  },
+  "bugs": {
+    "url": "http://github.com/iboxpay/countly-server/issues"
+  },
+  "keywords": [
+    "countly",
+    "analytics",
+    "mobile",
+    "plugins",
+    "template"
+  ],
+  "dependencies": {},
+  "private": true
+}

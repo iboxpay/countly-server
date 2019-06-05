@@ -1,0 +1,138 @@
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8"></head><body><div id="filter-view" class="navigation-menu">
+    <div style="display:none;" id="defalt-filter-block">
+        <div class="query">
+            <div class="and-or">
+                <div class="filter-connector cly-select centered force" style="width:55px; right:3px; top:-1px">
+                    <div class="select-inner">
+                        <div class="text-container">
+                            <div data-value="AND" class="text" data-localize="drill.and">AND</div>
+                            <span class="arrow ion-chevron-down"></span>
+                        </div>
+                    </div>
+                    <div class="select-items square" style="width:56px; display: none;">
+                        <div data-value="BY" class="item by" data-localize="drill.by">BY</div>
+                        <div data-value="AND" class="item" data-localize="drill.and">AND</div>
+                        <div data-value="OR" class="item" data-localize="drill.or">OR</div>
+                    </div>
+                </div>
+            </div>
+            <div class="connector">
+                <div class="top"></div>
+                <div class="middle-bottom"></div>
+                <div class="middle-top"></div>
+            </div>
+            <div class="filters">
+                <div class="filter-name cly-select cly-select-keynav centered text-align-left" style="width:200px;">
+                    <div class="select-inner">
+                        <div class="text-container">
+                            <div class="text" data-localize="drill.select-filter">Select a Filter</div>
+                        </div>
+                        <div class="right combo"></div>
+                    </div>
+                    <div class="select-items square" style="width:200px; display: none;">
+                        <div></div>
+                    </div>
+                </div>
+                <div data-max="3" class="filter-multi-values cly-multi-select cly-select-keynav centered text-align-left" style="width: 521px; margin-right:5px; display:none">
+                    <div class="select-inner">
+                        <div class="text-container">
+                            <div class="text">
+                                <div class="default-text" data-localize="drill.select-filters">Select Filters</div>
+                            </div>
+                        </div>
+                        <div class="right combo"></div>
+                    </div>
+                    <div class="select-items square" style="width:inherit; display: none;"></div>
+                </div>
+                <div class="filter-type cly-select centered force disabled" style="width:100px;">
+                    <div class="select-inner">
+                        <div class="text-container">
+                            <div data-value="=" class="text" data-localize="drill.opr.is"></div>
+                        </div>
+                    </div>
+                    <div class="select-items square" style="width:100px; display: none;">
+                        <div data-value="rgxcn" class="item str list rgx rgxcn" data-localize="drill.opr.contains"></div>
+                        <div data-value="$gt" class="item num gt" data-localize="drill.opr.greater-than"></div>
+                        <div data-value="$gte" class="item num gt gte" data-localize="drill.opr.at-least"></div>
+                        <div data-value="$lt" class="item num lt" data-localize="drill.opr.less-than"></div>
+                        <div data-value="$lte" class="item num lt lte" data-localize="drill.opr.at-most"></div>
+                        <div data-value="=" class="item both eq" data-localize="drill.opr.is"></div>
+                        <div data-value="!=" class="item both neq" data-localize="drill.opr.is-not"></div>
+                    </div>
+                </div>
+                <div class="filter-value list cly-select cly-select-keynav centered text-align-left disabled" style="width:200px;">
+                    <div class="select-inner">
+                        <div class="text-container">
+                            <div class="text" data-localize="drill.list">List</div>
+                        </div>
+                        <div class="right combo"></div>
+                    </div>
+                    <div class="select-items square" style="width:200px; display: none;">
+                        <div></div>
+                    </div>
+                </div>
+                <div class="filter-value string hidden">
+                    <input type="text" placeholder="String">
+                </div>
+                <div class="filter-value num hidden">
+                    <input type="number" placeholder="Number">
+                </div>
+                <div class="filter-value date hidden">
+                    <input class="open-date-picker" type="text" placeholder="Date">
+                    <div class="date-picker">
+                        <div class="calendar-container calendar-light">
+                            <div class="calendar"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="delete"><i class="material-icons">highlight_off</i></div>
+        </div>
+    </div>
+    <div id="segmentation">
+        <div id="filter-blocks" class="empty"></div>
+        <div id="connector-container">
+            <div class="connector" style="height:66px;">
+                <div class="middle-top" style="height:48px;"></div>
+            </div>
+            <div style="display:inline-block;">
+                <div id="filter-add-container" class="icon-button light"><span id="add-filter" class="fa fa-plus"></span></div>
+                <div id="apply-filter" class="icon-button create-report disabled" style="margin-left:10px; float:left;" data-localize="drill.apply">Apply Query</div>
+                <div id="drill-actions">
+                    <div style="float:left;height:1px;border-top: 1px solid #d0d0d0;width: 46px;margin-top:12px;"></div>
+                    <div style="    position: relative;  display: inline-block;">
+                        <a id="drill-filter-actions-button" class="link icon-button light" style="position: relative;">
+
+                            <i class="ion-ios-bolt" style="font-size: 17px; position: absolute; top: 4px;"></i>
+                            <span data-localize="drill.make-action" style="padding-left: 13px;">
+                                Actions
+                            </span>
+                        </a>
+                        <div class="edit-menu" id="actions-popup">
+                            <div class="item" id="action-add-bookmark">
+                                <div class="item-icon">
+                                    <span class="fa fa-bookmark"></span>
+                                </div>
+                                <div class="content">
+                                    <div class="title" data-localize="drill.save-bookmark-item"></div>
+                                    <div class="subtitle" data-localize="drill.save-bookmark-item-desc"></div>
+                                </div>
+                            </div>
+
+                            <div class="item" id="action-add-report">
+                                <div class="item-icon">
+                                    <span class="fa fa-file" style="font-size:20px;"></span>
+                                </div>
+                                <div class="content">
+                                    <div class="title" data-localize="drill.save-report-item"></div>
+                                    <div class="subtitle" data-localize="drill.save-report-item-desc"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div></body></html>

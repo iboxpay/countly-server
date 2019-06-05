@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="243px" height="243px" viewBox="0 0 243 243" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 49.2 (51160) - http://www.bohemiancoding.com/sketch -->
+    <title>Group 11</title>
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <circle id="path-1" cx="121.5" cy="121.5" r="121.5"></circle>
+        <rect id="path-3" x="0" y="0" width="38" height="78" rx="2"></rect>
+        <rect id="path-4" x="42" y="0" width="141" height="182" rx="2"></rect>
+    </defs>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Artboard-4" transform="translate(-165.000000, -158.000000)">
+            <g id="Group-11" transform="translate(165.000000, 158.000000)">
+                <g id="Group-3">
+                    <mask id="mask-2" fill="white">
+                        <use xlink:href="#path-1"></use>
+                    </mask>
+                    <use id="Mask" fill="#D8D8D8" xlink:href="#path-1"></use>
+                    <g id="Group-2" mask="url(#mask-2)">
+                        <g transform="translate(27.350649, 50.493506)">
+                            <rect id="Rectangle" fill="#FFFFFF" x="0" y="0" width="220.856491" height="15.9896102"></rect>
+                            <g id="Group" stroke-width="1" fill="none" transform="translate(0.000000, 15.989610)">
+                                <rect id="Rectangle-2" fill="#2E2E2E" x="0" y="0" width="53.1562371" height="159.666893"></rect>
+                                <rect id="Rectangle-2" fill="#383838" x="0" y="125.05379" width="53.1562371" height="70.6085473"></rect>
+                                <ellipse id="Oval" fill="#575757" cx="6.64452964" cy="6.6993102" rx="3.32226482" ry="3.3496551"></ellipse>
+                                <rect id="Rectangle-3" fill="#575757" x="14.3964809" y="5.5827585" width="21.0410105" height="2.2331034"></rect>
+                                <ellipse id="Oval" fill="#575757" cx="6.64452964" cy="17.8648272" rx="3.32226482" ry="3.3496551"></ellipse>
+                                <rect id="Rectangle-3" fill="#575757" x="14.3964809" y="16.7482755" width="21.0410105" height="2.2331034"></rect>
+                                <ellipse id="Oval" fill="#575757" cx="6.64452964" cy="29.0303442" rx="3.32226482" ry="3.3496551"></ellipse>
+                                <rect id="Rectangle-3" fill="#575757" x="14.3964809" y="27.9137925" width="21.0410105" height="2.2331034"></rect>
+                                <ellipse id="Oval" fill="#575757" cx="6.64452964" cy="40.1958612" rx="3.32226482" ry="3.3496551"></ellipse>
+                                <rect id="Rectangle-3" fill="#575757" x="14.3964809" y="39.0793095" width="21.0410105" height="2.2331034"></rect>
+                                <ellipse id="Oval" fill="#575757" cx="6.64452964" cy="51.1958612" rx="3.32226482" ry="3.3496551"></ellipse>
+                                <rect id="Rectangle-3" fill="#575757" x="14.3964809" y="50.0793095" width="21.0410105" height="2.2331034"></rect>
+                                <ellipse id="Oval-Copy-2" fill="#575757" cx="6.64452964" cy="62.5268952" rx="3.32226482" ry="3.3496551"></ellipse>
+                                <rect id="Rectangle-3-Copy-2" fill="#575757" x="14.3964809" y="61.4103435" width="21.0410105" height="2.2331034"></rect>
+                                <ellipse id="Oval-Copy-3" fill="#575757" cx="6.64452964" cy="73.6924122" rx="3.32226482" ry="3.3496551"></ellipse>
+                                <rect id="Rectangle-3-Copy-3" fill="#575757" x="14.3964809" y="72.5758605" width="21.0410105" height="2.2331034"></rect>
+                                <ellipse id="Oval-Copy-4" fill="#575757" cx="6.64452964" cy="84.8579292" rx="3.32226482" ry="3.3496551"></ellipse>
+                                <rect id="Rectangle-3-Copy-4" fill="#575757" x="14.3964809" y="83.7413775" width="21.0410105" height="2.2331034"></rect>
+                                <ellipse id="Oval-Copy-5" fill="#575757" cx="6.64452964" cy="96.0234462" rx="3.32226482" ry="3.3496551"></ellipse>
+                                <rect id="Rectangle-3-Copy-5" fill="#575757" x="14.3964809" y="94.9068945" width="21.0410105" height="2.2331034"></rect>
+                            </g>
+                            <rect id="Rectangle-6" fill="#C6C6C6" x="55.9636357" y="18.9876621" width="161.894803" height="15.9896102"></rect>
+                            <rect id="Rectangle-6" fill="#FFFFFF" x="55.9636357" y="18.9876621" width="161.894803" height="218.752598"></rect>
+                            <rect id="Rectangle-7" fill="#2E2E2E" opacity="0.189368207" x="60.9603888" y="25.9831166" width="19.9870127" height="2.99805191" rx="1.49902596"></rect>
+                            <rect id="Rectangle-15" fill="#D8D8D8" opacity="0.409646739" x="7.99480509" y="3.99740255" width="7.99480509" height="6.99545446" rx="3.49772723"></rect>
+                            <rect id="Rectangle-16" fill="#EFEFEF" x="20.9863634" y="6.99545446" width="20.9863634" height="1.99870127"></rect>
+                            <rect id="Rectangle-17" fill="#D8D8D8" opacity="0.395606884" x="52.9655838" y="0" width="36.9759736" height="15.9896102"></rect>
+                            <rect id="Rectangle-17-Copy" fill="#D8D8D8" opacity="0.209692029" x="88.9422067" y="0" width="36.9759736" height="15.9896102"></rect>
+                            <rect id="Rectangle-18" fill="#D8D8D8" opacity="0.452105978" x="65.957142" y="6.99545446" width="17.9883115" height="1.99870127"></rect>
+                            <rect id="Rectangle-18-Copy" fill="#D8D8D8" opacity="0.452105978" x="102.933116" y="6.99545446" width="17.9883115" height="1.99870127"></rect>
+                            <circle id="Oval-2" fill="#D8D8D8" opacity="0.58837183" cx="212.861686" cy="8.99415573" r="2.99805191"></circle>
+                            <rect id="Rectangle-19" fill="#D8D8D8" opacity="0.58837183" x="197.871426" y="7.99480509" width="8.99415573" height="1"></rect>
+                            <rect id="Rectangle-19-Copy" fill="#D8D8D8" opacity="0.58837183" x="183.880517" y="7.99480509" width="8.99415573" height="1"></rect>
+                        </g>
+                    </g>
+                    <g id="Group-6" mask="url(#mask-2)">
+                        <g transform="translate(88.000000, 85.000000)">
+                            <g id="Rectangle-24" opacity="0.223278986">
+                                <use fill="#FFFFFF" fill-rule="evenodd" xlink:href="#path-3"></use>
+                                <rect stroke="#979797" stroke-width="1" x="0.5" y="0.5" width="37" height="77" rx="2"></rect>
+                            </g>
+                            <g id="Group-5" stroke-width="1" fill-rule="evenodd" transform="translate(1.000000, 0.000000)">
+                                <g id="Rectangle-24-Copy" opacity="0.223278986">
+                                    <use fill="#FFFFFF" fill-rule="evenodd" xlink:href="#path-4"></use>
+                                    <rect stroke="#979797" stroke-width="1" x="42.5" y="0.5" width="140" height="181" rx="2"></rect>
+                                </g>
+                                <path d="M44,0 L181,0 C182.104569,-2.02906125e-16 183,0.8954305 183,2 L183,13 L42,13 L42,2 C42,0.8954305 42.8954305,2.02906125e-16 44,0 Z" id="Rectangle-24-Copy" fill="#E8E8E8"></path>
+                                <path d="M2,0 L34,0 C35.1045695,-2.02906125e-16 36,0.8954305 36,2 L36,13 L0,13 L0,2 C-1.3527075e-16,0.8954305 0.8954305,2.02906125e-16 2,0 Z" id="Rectangle-24-Copy" fill="#E8E8E8"></path>
+                                <g id="Group-4" opacity="0.381510417" transform="translate(73.000000, 52.000000)" fill="#D8D8D8">
+                                    <rect id="Rectangle-25" x="0" y="0" width="127" height="9" rx="1"></rect>
+                                    <rect id="Rectangle-25-Copy" x="0" y="18" width="82" height="9" rx="1"></rect>
+                                    <rect id="Rectangle-25-Copy-2" x="0" y="36" width="45" height="9" rx="1"></rect>
+                                    <rect id="Rectangle-25-Copy-3" x="0" y="54" width="38" height="9" rx="1"></rect>
+                                    <rect id="Rectangle-25-Copy-4" x="0" y="72" width="32" height="9" rx="1"></rect>
+                                    <rect id="Rectangle-25-Copy-5" x="0" y="90" width="6" height="9" rx="1"></rect>
+                                </g>
+                                <path d="M60.5908015,56.9818257 L60.5908015,147.76989" id="Path-2" stroke="#979797" opacity="0.0835031703"></path>
+                            </g>
+                            <g id="Group-10" stroke-width="1" fill-rule="evenodd" transform="translate(66.000000, 25.000000)">
+                                <g id="Group-9" fill="#D8D8D8">
+                                    <rect id="Rectangle-27-Copy-2" x="0" y="16" width="18" height="2"></rect>
+                                    <circle id="Oval-3" opacity="0.294723732" cx="9.5" cy="5.5" r="5.5"></circle>
+                                </g>
+                                <g id="Group-8" transform="translate(38.000000, 0.000000)" fill="#D8D8D8">
+                                    <rect id="Rectangle-27-Copy-3" x="0" y="16" width="18" height="2"></rect>
+                                    <circle id="Oval-3-Copy" opacity="0.294723732" cx="9.5" cy="5.5" r="5.5"></circle>
+                                </g>
+                                <g id="Group-7" transform="translate(76.000000, 0.000000)" fill="#D8D8D8">
+                                    <rect id="Rectangle-27-Copy-4" x="0" y="16" width="18" height="2"></rect>
+                                    <circle id="Oval-3-Copy-2" opacity="0.294723732" cx="9.5" cy="5.5" r="5.5"></circle>
+                                </g>
+                            </g>
+                        </g>
+                    </g>
+                </g>
+                <rect id="Rectangle-26" fill="#48BE4A" x="88" y="98" width="38" height="8"></rect>
+                <rect id="Rectangle-27" fill="#D8D8D8" x="92" y="91" width="18" height="2"></rect>
+                <rect id="Rectangle-27-Copy" fill="#D8D8D8" x="137" y="91" width="35" height="2"></rect>
+                <polygon id="Rectangle-4" fill="#2EA030" points="27.3506494 134.261736 80.5068865 134.261736 80.5068865 145.427253 27.3506494 145.427253"></polygon>
+                <rect id="Rectangle-3-Copy" fill="#61B063" x="41.7471302" y="138.727943" width="21.0410105" height="2.2331034"></rect>
+                <ellipse id="Oval-Copy" fill="#61B063" cx="33.995179" cy="139.844495" rx="3.32226482" ry="3.3496551"></ellipse>
+                <circle id="Oval-4" fill="#F1F1F1" cx="149.5" cy="141.5" r="2.5"></circle>
+                <circle id="Oval-4-Copy" fill="#F1F1F1" cx="149.5" cy="160.5" r="2.5"></circle>
+                <circle id="Oval-4-Copy-2" fill="#F1F1F1" cx="149.5" cy="177.5" r="2.5"></circle>
+                <circle id="Oval-4-Copy-3" fill="#F1F1F1" cx="149.5" cy="195.5" r="2.5"></circle>
+                <circle id="Oval-4-Copy-4" fill="#F1F1F1" cx="149.5" cy="213.5" r="2.5"></circle>
+                <circle id="Oval-4-Copy-5" fill="#F1F1F1" cx="149.5" cy="232.5" r="2.5"></circle>
+            </g>
+        </g>
+    </g>
+</svg>

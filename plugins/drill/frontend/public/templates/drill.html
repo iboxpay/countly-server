@@ -1,0 +1,312 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"></head><body><div id="drill-no-event" style="display:none; padding-top:20px; padding-left:20px; left:-20px; top:-20px; position:fixed; width:100%; height:100%; background-color:#333; opacity:0; z-index:3;"></div>
+<div class="remind-row drill">
+    <div class="content">
+            <i class="material-icons">error</i>
+            <span class="remind-context"></span>
+    </div>
+</div>
+<div class="widget drill" style="position:relative; border-bottom-left-radius:0; border-bottom-right-radius:0; margin-bottom:0;">
+    <div class="widget-header">
+        <div class="left">
+            <div style="overflow: auto;">
+            <div class="title small">Drill</div>
+            </div>
+
+            <div class="cly-widebox-select float" id="drill-type-select">
+                <div class="select-toggler">
+                  <span data-localize="sidebar.analytics.sessions" class="text">Sessions</span>
+                  <span class="arrow ion-chevron-down"></span>
+                </div>
+                <div class="square main-square">
+                  <div class="select-button" id="drill-types">
+                    <div class="text-wrapper">Drill type</div>
+                    <div id="drill-type-sessions" data-value="clk" class="segmentation-option item">
+                      <div class="inner">
+                        <span class="icon sessions"><i class="material-icons">grain</i></span>
+                        <span class="text" data-localize="sidebar.analytics.sessions"></span>
+                      </div>
+                    </div>
+                    <div id="drill-type-events" data-value="clk" class="segmentation-option item two-phase-selector">
+                      <div class="inner">
+                        <span class="icon events"><i class="material-icons">bubble_chart</i></span>
+                        <span class="text" data-localize="sidebar.events"></span>
+                      </div>
+                    </div>
+                  </div>
+                  <div id="event-selector" class="select-configuration">
+                    <div class="text-wrapper" data-localize="drill.select-event"></div>
+                    <div class="event-select">
+                      <div class="menu">
+              					<div class="search event-search">
+              						<input type="text">
+              					</div>
+              					<div class="list"></div>
+              				 </div>
+                   </div>
+                 </div>
+                 <div id="selector-no-event" class="select-configuration">
+                   <div class="drill-empty-events"></div>
+                   <h3 data-localize="events.all.empty-title"></h3>
+                   <div>
+                     <div class="detail-text" data-localize="events.all.empty-text"></div>
+                   </div>
+                </div>
+                </div>
+            </div>
+        </div>
+
+        {{> date-selector }}
+    </div>
+</div>
+<div id="drill">
+    <div class="widget" style="position:relative;">
+        <div class="graph-description">
+            <div id="graph-settings">
+                <div class="graph-settings">
+                    <div style="overflow:auto;">
+                        <div class="type button-selector" style="display:none;">
+                            <div data-type="line" class="button icon light active"><i class="material-icons">show_chart</i></div>
+                            <div data-type="pie" class="button icon light"><span class="ion-icons ion-pie-graph"></span></div>
+                            <div data-type="punchcard" class="button icon light only-2by"><i class="material-icons">bubble_chart</i></div>
+                            <div data-type="bar" class="button icon light"><span class="ion-icons ion-stats-bars"></span></div>
+                        </div>
+                        <div class="bucket button-selector">
+                            <div data-bucket="hourly" style="display:none;" class="button light" data-localize="drill.hourly">Hourly</div>
+                            <div data-bucket="daily" class="button light active" data-localize="drill.daily">Daily</div>
+                            <div data-bucket="weekly" class="button light" data-localize="drill.weekly">Weekly</div>
+                            <div data-bucket="monthly" class="button light" data-localize="drill.monthly">Monthly</div>
+                        </div>
+                        <div class="value button-selector">
+                            <div data-value="users" class="button light" data-localize="drill.users">Users</div>
+                            <div data-value="times" class="button light active" data-localize="drill.times">Times</div>
+                            <div data-value="average" class="button light" data-localize="drill.times-users">Times/Users</div>
+                            <div data-value="sum" class="value-sum button light" data-localize="drill.sum">Sum</div>
+                            <div data-value="sum_average" class="value-sum button light" data-localize="drill.sum-users">Sum/Users</div>
+                            <div data-value="dur" class="value-dur button light" data-localize="drill.dur">Duration</div>
+                            <div data-value="dur_average" class="value-dur button light" data-localize="drill.dur-users">Duration/Users</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="widget-content" style="position:relative; ">
+            <div id="dashboard-graph" class="graph" style="margin-left:-10px; height:252px;">
+                <div id="graph-placeholder">
+                    <i class="material-icons">show_chart</i>
+                </div>
+            </div>
+            <div id="empty-graph" class="no-data">
+                <span data-localize="drill.no-data">There is no data to show for this period</span>
+            </div>
+            <div id="label-container">
+                <div class="labels"></div>
+            </div>
+            <div style="text-align: center;">
+                <div id="geo-chart"></div>
+            </div>
+            <div style="text-align: center;">
+                <div id="drill-punchcard"></div>
+            </div>
+        </div>
+    </div>
+    <div style="margin-top:25px;">
+        <ul id="drill-tabs">
+          <li><a data-open="filter-view" class="menu active" data-localize="drill.tab.querybuilder">QUERY BUILDER</a></li>
+          <li><a data-open="bookmark-view" class="menu" data-localize="drill.tab.bookmarks">BOOKMARKS</a></li>
+          <li><a data-open="table-view" class="menu" data-localize="drill.tab.table">DATA TABLE</a></li>
+        </ul>
+        {{> filter-view }}
+        <div id="table-view" class="navigation-menu" style="display:none;">
+            <div id="drill-table-for" class="widget-header" style="display:none;">
+                <div class="left" style="float:none">
+                    <div style="overflow: auto;">
+                      <div class="title small" data-localize="drill.tab.table">DATA TABLE</div>
+                    </div>
+                </div>
+                <div style="float: left;padding-top: 6px;margin-right: 0px;color: #444;font-family: Ubuntu;font-size: 13px;margin-left: 5px;" data-localize="drill.display-table">for</div>
+                <div class="cly-select float" style="max-width:250px;">
+                    <div class="select-inner">
+                        <div class="text-container">
+                            <div data-value="" class="text"></div>
+                        </div>
+                        <div class="right combo"></div>
+                    </div>
+                    <div class="select-items square" style="width:220px;">
+                      <div></div>
+                    </div>
+                </div>
+            </div>
+            <table id="drill-table" cellpadding="0" cellspacing="0" class="d-table"></table>
+        </div>
+        <div id="bookmark-view" class="navigation-menu" style="display:none;">
+            <div id="bookmark-table-for" class="widget-header">
+                <div class="left" style="float:none">
+                    <div style="overflow: auto;">
+                      <div class="title small" data-localize="drill.tab.bookmarks">BOOKMARKS</div>
+                    </div>
+                </div>
+                <div style="float: left;padding-top: 6px;margin-right: 0px;color: #444;font-family: Ubuntu;font-size: 13px;margin-left: 5px;" data-localize="drill.display-table">for</div>
+                <div class="cly-select float" style="max-width:250px;">
+                    <div class="select-inner">
+                        <div class="text-container">
+                            <div data-value="0" class="text" data-localize="drill.bookmark.selected">Selected Metric</div>
+                        </div>
+                        <div class="right combo"></div>
+                    </div>
+                    <div class="select-items square" style="width:150px;">
+                        <div>
+                          <div class="item" data-value="0" data-localize="drill.bookmark.selected">Selected Metric</div>
+                          <div class="item" data-value="1" data-localize="drill.bookmark.all">All Metrics</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <table cellpadding="0" cellspacing="0" class="d-table dataTable">
+                <thead>
+                    <tr>
+                        <th style="width:45px;"></th>
+                        <th data-localize="drill.table-bookmark-name"></th>
+                        <th style="width:8%;" data-localize="drill.table-bookmark-visibility"></th>
+                        <th data-localize="drill.query">Query</th>
+                        <th data-localize="drill.by-query">By</th>
+
+                    </tr>
+                </thead>
+                <tbody id="drill-bookmark-body"></tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <div id="bookmark-widget-drawer" class="cly-drawer">
+        <div class="title">
+            <span id="add-bookmark-title" data-localize="drill.add-query"></span>
+            <span id="edit-bookmark-title" data-localize="drill.edit-bookmark"></span>
+
+
+                <div class="close"><i id="bookmark-widge-close" class="ion-ios-close-empty"></i></div>
+        </div>
+
+        <div class="details">
+            <input type="text" id="current_report_id" hidden="">
+
+            <div class="section">
+                <div class="label" data-localize="drill.bookmark-name"></div>
+                <div>
+                    <input id="bookmark-name-input" class="input" type="text" placeholder="Enter bookmark name">
+                </div>
+            </div>
+            <div class="section">
+                <div class="label" data-localize="drill.bookmark-desc"></div>
+                <div>
+                    <input id="bookmark-desc-input" class="input" type="text" placeholder="Enter bookmark description">
+                </div>
+                <div class="description" data-localize="drill.bookmark-input-remind">
+
+                </div>
+            </div>
+            <div class="section">
+                <div class="checks">
+                    <div id="global-option" class="check selected">
+                        <div class="box"></div>
+                        <div class="text" data-localize="drill.bookmark-global-option"></div>
+                        <div class="description" data-localize="drill.bookmark-global-option-desc"></div>
+                    </div>
+                    <div id="private-option" class="check">
+                        <div class="box"></div>
+                        <div class="text" data-localize="drill.bookmark-private-option"></div>
+                        <div class="description" data-localize="drill.bookmark-private-option-desc"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="buttons">
+                <div id="create-bookmark" class="icon-button green disabled" data-localize="drill.save-bookmark"></div>
+        </div>
+
+
+    </div>
+
+
+    <div id="report-widget-drawer" class="cly-drawer">
+        <div class="title">
+            <span data-localize="drill.reportmanager-title"></span>
+                <div class="close"><i id="report-widge-close" class="ion-ios-close-empty"></i></div>
+        </div>
+
+        <div class="details">
+            <input type="text" id="current_bookmark_id" hidden="">
+
+            <div class="section">
+                <div class="label" data-localize="drill.report-name"></div>
+                <div>
+                    <input id="report-name-input" class="input" type="text" placeholder="Enter report name">
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="label" data-localize="drill.report-desc"></div>
+                <div>
+                    <input id="report-desc-input" class="input" type="text" placeholder="Enter report description">
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="label" data-localize="drill.report-visibility"></div>
+                <div class="checks">
+                    <div id="report-global-option" class="check selected">
+                        <div class="box"></div>
+                        <div class="text" data-localize="drill.report-global-option"></div>
+                        <div class="description" data-localize="drill.report-global-option-desc"></div>
+                    </div>
+                    <div id="report-private-option" class="check">
+                        <div class="box"></div>
+                        <div class="text" data-localize="drill.report-private-option"></div>
+                        <div class="description" data-localize="drill.report-private-option-desc"></div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="section">
+                <div class="label" data-localize="drill.report-data"></div>
+                <div class="checks">
+                    <div id="report-refresh-option" class="check selected">
+                        <div class="box"></div>
+                        <div class="text" data-localize="drill.report-auto-refresh"></div>
+                        <div class="description" data-localize="drill.report-auto-refresh-desc"></div>
+                    </div>
+                    <div id="report-onetime-option" class="check">
+                        <div class="box"></div>
+                        <div class="text" data-localize="drill.report-onetime-option"></div>
+                        <div class="description" data-localozie="drill.report-oentime-option-desc"></div>
+                    </div>
+                </div>
+                <div class="description" data-localize="drill.report-data-desc">
+
+                </div>
+            </div>
+
+            <div class="section" id="report-period-block">
+                <div class="label" data-localize="drill.report-period"></div>
+                <div id="single-period-dropdown" class="cly-select" style="width: 100%; box-sizing: border-box;">
+                    <div class="select-inner">
+                        <div class="text-container">
+                            <div class="text">
+                                <div class="default-text" data-localize="drill.report-period-remind"></div>
+                            </div>
+                        </div>
+                        <div class="right combo"></div>
+                    </div>
+                    <div class="select-items square" style="width: 100%;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="buttons">
+                <div id="create-report" class="icon-button green disabled" data-localize="drill.report-save"></div>
+        </div>
+    </div>
+
+</div>
+</body></html>
