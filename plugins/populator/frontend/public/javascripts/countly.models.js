@@ -686,7 +686,7 @@
                 args: JSON.stringify({
                     "_id": id + countlyCommon.ACTIVE_APP_ID,
                     "name": name,
-                    "link": "http://count.ly",
+                    "link": "http://countly.iboxpay.com",
                     "cost": cost,
                     "costtype": type,
                     "fingerprint": false,

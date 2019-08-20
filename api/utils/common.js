@@ -207,8 +207,10 @@ common.dbEventMap = {
     'segmentations': 'sg',
     'count': 'c',
     'sum': 's',
-    'duration': 'dur',
-    'previous_events': 'pe'
+    'day': 'd',
+    'week': 'w',
+    'month': 'm',
+    'hour': 'h'
 };
 
 /**

@@ -1,6 +1,6 @@
 [Unit]
 Description=countly-supervisor
-Documentation=http://count.ly
+Documentation=http://wiki.iboxpay.com
 
 [Install]
 WantedBy=multi-user.target

@@ -104,9 +104,8 @@ var metrics = {
         function processUniverse(cb) {
             if (versionInfo.title.indexOf("Countly") > -1) {
                 var options = {
-                    uri: 'http://count.ly/email-news.txt',
-                    method: 'GET',
-                    timeout: 1000
+                    uri: 'http://countly.iboxpay.com/email-news.txt',
+                    method: 'GET'
                 };
 
                 request(options, function(error, response, body) {
