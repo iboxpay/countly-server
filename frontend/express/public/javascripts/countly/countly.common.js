@@ -96,7 +96,7 @@
         * Current user's selected language in form en-EN, by default will use browser's language
         * @type {string}
         */
-        // countlyCommon.BROWSER_LANG = countlyCommon.browserLang() || "zh-CN";
+        // countlyCommon.BROWSER_LANG = countlyCommon.browserLang() || "en-US";
         // cancel dynamic language, force setting zh-CN
         countlyCommon.BROWSER_LANG = "zh-CN";
         /**
