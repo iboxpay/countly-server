@@ -31,17 +31,19 @@ fi
 
 if [ -f /etc/lsb-release ]; then
     #install latest mongodb 
-	sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 2930ADAE8CAF5059EE73BB4B58712A2291FA4AD5
     UBUNTU_YEAR="$(lsb_release -sr | cut -d '.' -f 1)";
 
     if [ "$UBUNTU_YEAR" == "14" ]
     then
+        sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 2930ADAE8CAF5059EE73BB4B58712A2291FA4AD5
 		echo "deb [ arch=amd64 ] http://repo.mongodb.org/apt/ubuntu trusty/mongodb-org/3.6 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-3.6.list ;
     elif [ "$UBUNTU_YEAR" == "16" ]
     then
+        sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 2930ADAE8CAF5059EE73BB4B58712A2291FA4AD5
         echo "deb [ arch=amd64,arm64 ] http://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/3.6 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-3.6.list ;
     else
-        echo "deb [ arch=amd64,arm64 ] http://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/3.6 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-3.6.list ;
+        sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 9DA31620334BD75D9DCB49F368818C72E52529D4
+        echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/4.0 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-4.0.list ;
     fi
     apt-get update
     #install mongodb
@@ -62,6 +64,7 @@ if [ -f /etc/redhat-release ]; then
     if grep -q -i "release 6" /etc/redhat-release ; then
         service mongod restart || echo "mongodb service does not exist"
     else
+        apt-get install -y systemd
         systemctl restart mongod || echo "mongodb systemctl job does not exist"
     fi
 fi
@@ -70,6 +73,7 @@ if [ -f /etc/lsb-release ]; then
     if [[ `/sbin/init --version` =~ upstart ]]; then
         restart mongod || echo "mongodb upstart job does not exist"
     else
+        apt-get install -y systemd
         systemctl restart mongod || echo "mongodb systemctl job does not exist"
     fi
 fi
