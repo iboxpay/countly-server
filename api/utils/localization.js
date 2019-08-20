@@ -11,7 +11,7 @@ var locale = {},
 
 var dir = path.resolve(__dirname, '../../frontend/express/public/localization/min');
 var file = "locale";
-var default_lang = "en";
+var default_lang = "zh";
 var orig = {};
 var localized = {};
 
