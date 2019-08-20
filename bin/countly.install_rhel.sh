@@ -36,6 +36,7 @@ fi
 curl -sL https://rpm.nodesource.com/setup_8.x | bash -
 yum install -y nodejs
 
+yum install -y which
 set +e
 NODE_JS_CMD=$(which nodejs)
 set -e
@@ -84,7 +85,10 @@ fi
 ( cd $DIR/.. ; sudo npm install -g grunt-cli --unsafe-perm ; sudo npm install --unsafe-perm )
 
 #install mongodb
-bash $DIR/scripts/mongodb.install.sh
+if [ "$INSIDE_DOCKER_NOMONGO" != "1" ]
+then
+    bash $DIR/scripts/mongodb.install.sh
+fi
 
 cp $DIR/../frontend/express/public/javascripts/countly/countly.config.sample.js $DIR/../frontend/express/public/javascripts/countly/countly.config.js
 
