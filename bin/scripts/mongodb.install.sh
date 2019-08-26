@@ -26,6 +26,7 @@ gpgkey=https://www.mongodb.org/static/pgp/server-3.6.asc" > /etc/yum.repos.d/mon
     #disable transparent-hugepages (requires reboot)
     cp -f $DIR/disable-transparent-hugepages /etc/init.d/disable-transparent-hugepages
     chmod 755 /etc/init.d/disable-transparent-hugepages
+    # TODO: centos not exist chkconfig.
     chkconfig --add disable-transparent-hugepages
 fi
 
@@ -64,8 +65,9 @@ if [ -f /etc/redhat-release ]; then
     if grep -q -i "release 6" /etc/redhat-release ; then
         service mongod restart || echo "mongodb service does not exist"
     else
-        apt-get install -y systemd
-        systemctl restart mongod || echo "mongodb systemctl job does not exist"
+        yum install -y systemd
+        #systemctl restart mongod || echo "mongodb systemctl job does not exist"
+        systemctl enable mongod || echo "mongodb systemctl job does not exist"
     fi
 fi
 

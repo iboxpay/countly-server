@@ -68,7 +68,13 @@ fi
 
 #install sendmail
 yum -y install sendmail
-service sendmail start
+if grep -q -i "release 6" /etc/redhat-release ; then
+    service sendmail start
+    chkconfig sendmail on
+else
+    #systemctl start sendmail
+    systemctl enable sendmail
+fi
 
 #install new gcc
 if grep -q -i "release 6" /etc/redhat-release ; then
@@ -105,8 +111,13 @@ countly save /etc/nginx/conf.d/default.conf $DIR/config/nginx
 countly save /etc/nginx/nginx.conf $DIR/config/nginx
 cp $DIR/config/nginx.server.conf /etc/nginx/conf.d/default.conf
 cp $DIR/config/nginx.conf /etc/nginx/nginx.conf
-service nginx restart
-chkconfig nginx on
+if grep -q -i "release 6" /etc/redhat-release ; then
+    service nginx restart
+    chkconfig nginx on
+else
+    systemctl start nginx
+    systemctl enable nginx
+fi
 set -e
 
 #create configuration files from samples

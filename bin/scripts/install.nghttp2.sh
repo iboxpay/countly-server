@@ -48,7 +48,7 @@ if [ -d "$DIR/nghttp2" ]; then
 fi
 
 # default use remote repository
-# git clone https://github.com/nghttp2/nghttp2.git $DIR/nghttp2
+git clone https://github.com/nghttp2/nghttp2.git $DIR/nghttp2
 cd $DIR/nghttp2
 git checkout tags/v1.30.0
 # can use manual donwload special version if git don't clone
