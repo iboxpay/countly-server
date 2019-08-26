@@ -3,7 +3,7 @@
 
 <p align="right">
 
-[![Build Status](https://api.travis-ci.org/Countly/countly-server.png?branch=master)](https://travis-ci.org/Countly/countly-server) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/98c2726f2d734697a5f1ac0d453f0a06)](https://app.codacy.com/app/ar2rsawseen/countly-server?utm_source=github.com&utm_medium=referral&utm_content=Countly/countly-server&utm_campaign=Badge_Grade_Dashboard) [![Install Countly on DigitalOcean](https://do.count.ly/button.svg?v2)](http://do.count.ly)
+[![Build Status](https://api.travis-ci.org/Countly/countly-server.png?branch=master)](https://travis-ci.org/Countly/countly-server) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/98c2726f2d734697a5f1ac0d453f0a06)](https://app.codacy.com/app/ar2rsawseen/countly-server?utm_source=github.com&utm_medium=referral&utm_content=Countly/countly-server&utm_campaign=Badge_Grade_Dashboard) [![Install Countly on DigitalOcean](https://count.ly/github/install-on-digital-ocean.svg)](http://do.count.ly)
 
 </p>
 
@@ -98,7 +98,7 @@ Countly is a privacy-focused and 360-degree analytics platform with several, uni
 * Configurable and extensible via open source [plugins](https://count.ly/plugins).
 * Modern and easy to use web based dashboard with a focus on user experience, which makes getting complex insights a breeze.
 * Tracking more than 2500 web sites and 16000 mobile applications.
-* Collecting more than 60 billion datapoints worlwide.
+* Collecting more than 60 billion datapoints worldwide.
 
 ## Differences between Community Edition & Enterprise Edition
 
@@ -118,7 +118,7 @@ There are several ways to install Countly:
 
 1. The following command will download and install Countly on your **Ubuntu** or **CentOS** server. 
 
-    `wget -qO- http://c.ly/install | bash`
+    `wget -qO- https://c.ly/install | bash`
 
 2. If you have a Digital Ocean account, [click here and install on Digital Ocean](http://do.count.ly) with a single click.
 

@@ -14,6 +14,7 @@
             backgroundColor: "transparent",
             datalessRegionColor: "#FFF"
         },
+        _regionMap = {},
         _countryMap = {};
 
     // Load local country names
@@ -21,13 +22,17 @@
         _countryMap = data;
     });
 
+    $.get('localization/countries/en/region.json', function(data) {
+        _regionMap = data;
+    });
+
     window.countlyLocation = window.countlyLocation || {};
     countlyLocation.getCountryName = function(cc) {
-        var countryName = _countryMap[cc.toUpperCase()];
+        var countryName = _countryMap[cc && cc.toUpperCase()];
         if (countryName) {
             return countryName;
         }
-        else if (cc.toUpperCase() === "EU") {
+        else if (cc && cc.toUpperCase() === "EU") {
             return jQuery.i18n.map["common.eu"] || "European Union";
         }
         else {
@@ -35,6 +40,10 @@
         }
     };
     CountlyHelpers.createMetricModel(window.countlyLocation, {name: "countries", estOverrideMetric: "countries"}, jQuery, countlyLocation.getCountryName);
+
+    countlyLocation.getRegionName = function(rgn) {
+        return _regionMap[rgn];
+    };
 
     // Public Methods
     countlyLocation.initialize = function() {
@@ -103,6 +112,12 @@
 
             google.charts.load("current", googleChartsOptions);
         }
+    };
+
+    countlyLocation.orderByType = function(type, locationData) {
+        return _.sortBy(locationData, function(obj) {
+            return -obj[type];
+        });
     };
 
     countlyLocation.getLocationData = function(options) {
@@ -178,20 +193,25 @@
         ];
         chartData.cols.push(ob);
         chartData.rows = _.map(tt.chartData, function(value) {
+            if (value[ob.metric] === 0) {
+                return;
+            }
             if (value.country === "European Union" || value.country === jQuery.i18n.map["common.unknown"]) {
                 return {
                     c: [
                         {v: ""},
-                        {v: value[ob.metric]}
+                        {v: value[ob.metric] === 0 ? null : value[ob.metric]}
                     ]
                 };
             }
             return {
                 c: [
                     {v: value.country},
-                    {v: value[ob.metric]}
+                    {v: value[ob.metric] === 0 ? null : value[ob.metric]}
                 ]
             };
+        }).filter(function(row) {
+            return row;
         });
 
         _dataTable = new google.visualization.DataTable(chartData);
@@ -199,6 +219,8 @@
         _chartOptions.region = "world";
         _chartOptions.resolution = 'countries';
         _chartOptions.displayMode = "region";
+        _chartOptions.datalessRegionColor = "#F5F5F5";
+        _chartOptions.defaultColor = "#F5F5F5";
 
         if (ob.metric === "t") {
             _chartOptions.colorAxis.colors = ['#CAE3FB', '#52A3EF'];
@@ -250,6 +272,9 @@
         ];
         chartData.cols.push(ob);
         chartData.rows = _.map(tt.chartData, function(value) {
+            if (value[ob.metric] === 0) {
+                return;
+            }
             if (value.country === "European Union" || value.country === jQuery.i18n.map["common.unknown"]) {
                 return {
                     c: [
@@ -264,6 +289,8 @@
                     {v: value[ob.metric]}
                 ]
             };
+        }).filter(function(row) {
+            return row;
         });
 
         if (ob.metric === "t") {

@@ -11,7 +11,7 @@ function whatsNewPopup() {
         Document width check is a hack for certain cases like dashboard email
         screenshot process, in order not to show the popup
      */
-    if (countlyVersionHistoryManager && $("body").width() >= 900) {
+    if (countlyVersionHistoryManager) {
         $.when(countlyVersionHistoryManager.initialize()).then(function() {
 
             var versionData = _.sortBy(countlyVersionHistoryManager.getData(), "updated");
@@ -64,9 +64,9 @@ function whatsNewPopup() {
             //
             // LOGIC DISABLED FOR NOW BECAUSE VERSION DATA WILL INCLUDE 1 ITEM FOR ALL SERVERS
 
-            if (!displayParams.disabled) {
+            if (!displayParams.disabled && !(countlyGlobal && countlyGlobal.ssr)) {
 
-                if (localStorageData && localStorageData.version && localStorageData.seen && localStorageData.version === currentVersion) {
+                if (localStorageData && localStorageData.version && localStorageData.seen && localStorageData.version.indexOf(currentVersion) === 0) {
                     // Since LS object is present for this version
                     // user has seen the popup before so we won't show it on load
                     displayParams.isFirstTime = false;
@@ -154,6 +154,10 @@ function whatsNewPopup() {
                                     side: "bottom"
                                 });
                             }
+
+                            $(document).on("click", "#whatsnew-popup-close", function() {
+                                closePopup();
+                            });
 
                             $(document).on("click", "#last-step-button", function() {
                                 closePopup();

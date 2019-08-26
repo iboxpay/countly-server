@@ -1,3 +1,183 @@
+## Version 19.08.1
+
+**Fixes**
+* [EChartMap] refactor library loading
+* [EchartMap] fixed date change refresh bug
+* [api] fixed i/tasks/name - calling correct function
+* [api] fixed total user correction for server side models
+* [api] increase user count in aggregated data for country when country changes
+* [crashes] fixed crash menu arrow
+* [crashes] update minidump
+* [events] fixed getting undefined _activeEvent in some situations
+* [events] fixed issue with hiding/showing event whan there is '.' in event name
+* [events] fixed issue with matching events in frontend if their keys have special symbols like "&" in them
+* [frontend] changed duration display format
+* [frontend] fixed check for admin apps (some sections that should be shown to admin, where not visible)
+* [frontend] fixed chrome autofill prevention
+* [frontend] fixed countries screen color problem
+* [frontend] fixed keeping filtered events after changing segments
+* [frontend] fixed localization for visits in top
+* [frontend] fixed total user correction in 0 cases
+* [frontend] fixed unknown country check
+* [frontend] fixes for 0 values having colors on the map
+* [frontend] improved Internet Explorer 11 support
+* [logger] let large texts scroll in table cell
+* [prelogin] fixed issue with showing messages in forgot page
+* [push] GCM Deprecation
+* [push] included in data migration
+* [push] show only for mobile type
+* [sdk] updated bundled Web SDK
+* [views] view deletion added in systemlogs
+
+**Enterprise fixes**
+* [attribution] prevent user from creating campaign ID with " or '
+* [cohorts] cohort drawer ui bugs fixed
+* [crash_symbols] order the symbols when fetching to always use last symbol if multiple same symbols provided
+* [crashes-jira] fixed check for correct crashes view
+* [dashboards] fixed user estimation correction in custom dashboards
+* [drill] fixed country map bugs
+* [funnels] fixed delete multiple rows bug
+* [funnels] fixed dragging steps only by drag handler
+* [restrict] css fix for hiding menus
+* [users] also validate funnel step segmentation
+* [users] fix custom column selection bugs
+
+**Enterprise Improvements**
+* [cohorts] added configuration to control minimal cohort regeneration time
+* [concurrent_users] added legacy live plugin endpoint support
+* [drill] return undefined values too in BY queries
+* [users] added cursor pointer on view message button
+* [users] updated to use long name and value transformations for custom selected fields
+
+## Version 19.08
+
+**Fixes**
+* [api] fixed error on deleting user with exported data
+* [api] improved tops speed with aggregation pipeline
+* [app_versions] fixing displaying empty state
+* [assistant] handling case, when document could not be read
+* [browser] correctly convert metric to collection for correct data
+* [configs] display correct values in app configuration after save
+* [events] fixed event overview incorrectly formats duration
+* [frontend] added configuration element for google maps api key
+* [frontend] correct event total calculation for segmented view of aggregated data
+* [frontend] fixed Drop throws error when datatable is empty
+* [frontend] fixed japanese locale dates
+* [frontend] fixed refreshing total user correction for today
+* [frontend] reduced session extend calls.
+* [loyalty] fix table ordering
+* [push] Correct system log on push credentials update error
+* [push] Fixing populator creating messages for wrong app
+* [slipping-away] fix fetch user list bug
+* [source] fixed localization key in configs
+* [star-rating] lots of bug and ui fixes
+* [ui] Fixing expand row icon switches on refresh
+* [ui] changed email reports % colors.
+* [ui] disabling annoying chrome autocomplete
+* [ui] fix bug with Ubuntu font on Windows
+* [ui] prevent double scrolling
+* [ui] set app title attribute when switching apps
+* [ui] users and new users country sorting problem resolved
+* [views] fixes with tokens expiring when viewing heatmaps
+
+**Enterprise fixes**
+* [attribution] encode link if it is not a custom scheme
+* [attribution] fixed using last campaign urls when creating new campaign
+* [block] fixed creating empty users for new blocked users
+* [cohorts] fixed editing cohorts with big lists
+* [cohorts] handle empy user sets correctly and more efficiently
+* [dashboards] block all popups for dashboard image rendering in emails
+* [dashboards] fixed sending email reports if creator is deleted
+* [dashboards] improve screenshot rendering speed with cache for emails
+* [drill] actions button avaialble without query
+* [drill] better bucket and value selection for report manager data
+* [drill] big list values are not selected when replaying query bugfix
+* [drill] cohorts querying fixes
+* [drill] correct user count for multi BY queries
+* [drill] fixed generating month ticks for more than 1 year
+* [drill] query performance improved with new indexes
+* [flows] fix flows logic bug about app data clearing
+* [flows] fix views event logic bug
+* [funnels] allow to create funnels without events but with views
+* [funnels] fixed editing funnels with grouping elements
+* [funnels] top percentage update bug fixed
+* [groups] add uppercase to allowed characters for name and group id
+* [revenue] fix updating overview widget on period changes
+* [whitelabeling] replacement of word Countly with company name in all localized strings
+
+**New Features**
+* [api] allow updating multiple app users
+* [applications] application lock mechanism
+* [authorization] tokens now support url parameters as limits
+* [crashes] multi thread error support
+* [crashes] new crash stack processing for android and javascript
+* [crashes] new dropdown menu UI in crash groups
+* [dbviewer] added custom field support to dbviewer sort
+* [events] display top events for event overview
+* [frontend] option to delete your own account
+* [plugins] asynchronously check plugin enabling/disabling procedure
+* [push] Adding push events to user’s timeline
+* [push] allow building target audience just before scheduled date
+* [push] option to view recipients of a push
+* [push] proxy authentication support
+* [push] real-time event triggered push notifications
+* [report-manager] smarter more often regenerating automatic reports
+* [security] added password secret salt support in configuration file
+* [slipping-away-users] add flexible periods setting support
+* [two-factor-auth] enable two factor authentication through Microsoft or Google authenticator apps
+* [ui] added native tab behaivor to cly-select element
+* [ui] allow uploading dashboard profile pictures
+* [ui] customize graph colors through config file
+* [ui] moved some management tools to top menu
+* [ui] new graph note system
+* [ui] new menu design
+* [ui] new prelogin page design
+* [views] select columns to display functionality
+
+**New Enterprise Features**
+* [ab-testing] new plugin to perform AB testing
+* [attribution] allow providing custom domain for campaign links
+* [attribution] allow reattribution
+* [concurrent_users] new and more performant and detailed version of live plugin
+* [crash_symbolication] support for native crashes and symbolication
+* [crashes-jira] plugin to tie caught crashes with JIRA issues
+* [drill] make Drill configuration on app level
+* [formulas] new plugin to perform arithmetical computations on selected metrics
+* [funnels] allow sorting steps by drag and drop when editing funnels
+* [geo] Allowing float as geo radius
+* [users] added region support
+* [users] select columns to display functionality
+
+**Development related**
+* [api] moved account deletion to backend api.
+* [api] provide cancel request on app not exists
+* [api] refactored getPeriodObj
+* [cmd] added new upgrade subcommands for automatic multiple version upgrades
+* [cmd] script to upgrade countly to ee
+* [cmd] use password prompt to mask sensitive data
+* [common] add email for validation
+* [configs] improved config parsing and usage
+* [configs] more session and cookie settings in config file
+* [core] Increasing default heap size to 2Gb for API
+* [crashes] make crash identification model independent
+* [db] log incorrect Object ID to info level
+* [example] AWS SES - Simple Email Service example
+* [example] nginx example config of blocking access outside intranet
+* [frontend] redirect rather than render on POST processing
+* [frontend] replaced old google library loader with new version
+* [frontend] set cookie only when theme is customizable on user level
+* [frontend] trust estimation correction more than new users data
+* [members] moved all member functions to single separate members utility
+* [scripts] allow countly user to enable plugins
+* [scripts] correctly backup nginx config on ubuntu
+* [scripts] update_translation.js perfs and reliability boost
+* [security] HTML escaping in all localized strings
+* [security] remove flash cross domain policy
+* [taskmanager] no need to decode html (breaks json parsing)
+* [tests] additional way to parse CSRF from body in case of minified html
+* [ui] new menu management system
+* [ui] updated font awesome lib
+
 ## Version 19.02.1
 
 **Fixes**

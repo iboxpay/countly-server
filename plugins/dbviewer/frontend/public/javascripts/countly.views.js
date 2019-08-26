@@ -44,9 +44,9 @@ window.DBViewerView = countlyView.extend({
             var filteredCollectionListKeys = [];
             var filteredCollectionListValues = [];
 
-            for (var key in data[0].collections) {
+            for (var key in data[data.indexOf(db)].collections) {
                 filteredCollectionListKeys.push(key);
-                filteredCollectionListValues.push(data[0].collections[key]);
+                filteredCollectionListValues.push(data[data.indexOf(db)].collections[key]);
             }
 
             filteredCollectionListValues.sort(function(a, b) {
@@ -134,6 +134,11 @@ window.DBViewerView = countlyView.extend({
         }
 
         $('body').off('click', '.collection-list-item').on('click', '.collection-list-item', function() {
+            if (store.get('countly_collection') !== $(this).data('collection')) {
+                store.set('countly_collectionfilter', '');
+                store.set('countly_collection', $(this).data('collection'));
+                self.filter = '{}';
+            }
             app.navigate('#/manage/db/' + $(this).data('db') + '/' + $(this).data('collection'), false);
             self.db = $(this).data('db');
             self.collection = $(this).data('collection');
@@ -205,7 +210,7 @@ window.DBViewerView = countlyView.extend({
         });
 
         $('body').off('click', '.dbviewer-aggregate').on('click', '.dbviewer-aggregate', function() {
-            app.navigate('#/manage/db/aggregate/' + window.location.hash.split("/")[4] + '/' + window.location.hash.split("/")[5], false);
+            app.navigate('#/manage/db/aggregate/' + self.db + '/' + self.collection, false);
             self.dbviewer_aggregation = true;
             $('#dbviewer').hide();
             $('#aggregate-view').show();
@@ -216,7 +221,7 @@ window.DBViewerView = countlyView.extend({
         });
 
         $('body').off('click', '#back_to_dbviewer').on('click', '#back_to_dbviewer', function() {
-            app.navigate('#/manage/db/' + window.location.hash.split("/")[5] + '/' + window.location.hash.split("/")[6], true);
+            app.navigate('#/manage/db/' + self.db + '/' + self.collection, true);
             self.dbviewer_aggregation = false;
             $('#dbviewer').show();
             $('#aggregate-view').hide();
@@ -245,12 +250,11 @@ window.DBViewerView = countlyView.extend({
                 return;
             }
             $('#aggregate-result-table > thead').html("");
-            var hashes = window.location.hash.split("/");
             $('#show-aggregation-input').show();
             $('.aggregate-prepare-area').hide();
-            countlyDBviewer.executeAggregation(hashes[5], hashes[6], aggregation, function(data) {
+            countlyDBviewer.executeAggregation(self.db, self.collection, aggregation, function(data) {
                 var columns = self.generateColumnArray(data.aaData[0]);
-                var dTableConfig = self.generateDTableObject(hashes, aggregation, columns, data);
+                var dTableConfig = self.generateDTableObject(aggregation, columns, data);
                 this.dtable = $('#aggregate-result-table').dataTable($.extend({}, $.fn.dataTable.defaults, dTableConfig));
             });
             $('#aggregate-result-table').stickyTableHeaders();
@@ -282,11 +286,12 @@ window.DBViewerView = countlyView.extend({
         }
         return aoColumns;
     },
-    generateDTableObject: function(hashes, aggregation, aoColumns, data) {
+    generateDTableObject: function(aggregation, aoColumns, data) {
+        var self = this;
         return {
             "bServerSide": true,
             "bFilter": false,
-            "sAjaxSource": countlyCommon.API_PARTS.data.r + "/db?dbs=" + hashes[5] + "&collection=" + hashes[6] + "&aggregation=" + aggregation,
+            "sAjaxSource": countlyCommon.API_PARTS.data.r + "/db?dbs=" + self.db + "&collection=" + self.collection + "&aggregation=" + aggregation,
             "fnServerData": function(sSource, aoData, fnCallback) {
                 if (data) {
                     fnCallback(data);
@@ -308,19 +313,23 @@ window.DBViewerView = countlyView.extend({
     },
     refresh: function() { },
     getExportAPI: function(tableID) {
-        var hashes = window.location.hash.split("/");
+        var self = this;
         var aggregation = $('#aggregation_pipeline').val();
         if (tableID === 'aggregate-result-table') {
-            var requestPath = '/o/db?api_key=' + countlyGlobal.member.api_key +
-            "&dbs=" + hashes[5] + "&collection=" + hashes[6] + "&iDisplayStart=0" +
-            "&aggregation=" + aggregation;
+            var requestPath = '/o/db';
             var apiQueryData = {
                 api_key: countlyGlobal.member.api_key,
-                app_id: countlyCommon.ACTIVE_APP_ID,
                 path: requestPath,
-                method: "GET",
-                filename: hashes[6] + "_on" + moment().format("DD-MMM-YYYY"),
-                prop: ['aaData']
+                data: JSON.stringify({
+                    api_key: countlyGlobal.member.api_key,
+                    dbs: self.db,
+                    collection: self.collection,
+                    iDisplayStart: 0,
+                    aggregation: aggregation
+                }),
+                filename: self.collection + "_on" + moment().format("DD-MMM-YYYY"),
+                prop: ['aaData'],
+                method: "POST"
             };
             return apiQueryData;
         }
@@ -482,22 +491,12 @@ window.DBViewerView = countlyView.extend({
         $('.dbviewer-documents-area').html("");
         $('.dbviewer-go-back').hide();
         dbs.forEach(function(db) {
-            if (db.name === 'countly') {
-                var templateCountly = '<div class="dbviewer-db-square db-detail" data-db="' + db.name + '">' +
-                    '<img src="./dbviewer/images/dbviewer/icon-1.svg">' +
-                    '<h3 class="dbviewer-db-title">' + $.i18n.map['dbviewer.countly-database'] + '</h3>' +
-                    '<p class="dbviewer-db-description">' + $.i18n.map['dbviewer.countly-database-description'] + '</p>' +
-                '</div>';
-                $('.dbviewer-documents-area').append(templateCountly);
-            }
-            if (db.name === 'countly_drill') {
-                var templateCountlyDrill = '<div class="dbviewer-db-square-drill db-detail" data-db="' + db.name + '">' +
-                    '<img src="./dbviewer/images/dbviewer/icon-2.svg">' +
-                    '<h3 class="dbviewer-db-title">' + $.i18n.map['dbviewer.countly-drill-database'] + '</h3>' +
-                    '<p class="dbviewer-db-description">' + $.i18n.map['dbviewer.countly-drill-database-description'] + '</p>' +
-                '</div>';
-                $('.dbviewer-documents-area').append(templateCountlyDrill);
-            }
+            var template = '<div id="' + db.name + '-box" class="dbviewer-db-square db-detail" data-db="' + db.name + '">' +
+                '<img src="./dbviewer/images/dbviewer/' + db.name + '.svg">' +
+                '<h3 class="dbviewer-db-title">' + $.i18n.map['dbviewer.' + db.name + '-database'] + '</h3>' +
+                '<p class="dbviewer-db-description">' + $.i18n.map['dbviewer.' + db.name + '-database-description'] + '</p>' +
+            '</div>';
+            $('.dbviewer-documents-area').append(template);
         });
     },
     renderCollections: function() {
@@ -555,8 +554,10 @@ window.DBViewerView = countlyView.extend({
             self.templateData.next = Math.min(data.pages, data.curPage + 1);
             self.templateData.start = Math.max(1, data.curPage - 5);
             self.templateData.end = Math.min(data.pages, data.curPage + 5);
-
+            var filterInputVal = $('.dbviewer-collection-filter-input').val();
             $(self.el).html(self.template(self.templateData));
+            $('.dbviewer-collection-filter-input').val(filterInputVal);
+            self.renderSearchResults($('.dbviewer-collection-filter-input'));
             if (self.dbviewer_aggregation) {
                 $('#dbviewer').hide();
                 $('#aggregate-view').show();
@@ -697,6 +698,37 @@ window.DBViewerView = countlyView.extend({
                     };
                 }
             });
+
+            // jQuery selectize handler for projection input
+            $('#dbviewer-sort-select').selectize({
+                persist: true,
+                maxItems: 1,
+                valueField: 'key',
+                labelField: 'key',
+                searchField: ['key'],
+                options: options,
+                render: {
+                    item: function(item) {
+                        return '<div>' +
+                            item.key +
+                            '</div>';
+                    },
+                    option: function(item) {
+                        var label = item.key;
+                        return '<div>' +
+                            '<span class="label">' + label + '</span>' +
+                            '</div>';
+                    }
+                },
+                createFilter: function() {
+                    return true;
+                },
+                create: function(input) {
+                    return {
+                        "key": input
+                    };
+                }
+            });
             // render sort options
             options.forEach(function(o) {
                 $('.dbviewer-sort-options-list').append('<div data-value="' + o.key + '" class="dbviewer-sort-param-selector item sort-field-select-item">' + o.key + '</div>');
@@ -729,7 +761,8 @@ window.DBViewerView = countlyView.extend({
                     });
                 }
                 if (store.get('dbviewer_sort_value')) {
-                    $('#dbviewer-sort_param').val(store.get('dbviewer_sort_value')).change();
+                    $('#dbviewer-sort-select')[0].selectize.addOption(store.get('dbviewer_sort_value'));
+                    $('#dbviewer-sort-select')[0].selectize.addItem(store.get('dbviewer_sort_value'));
                     $('#dbviewer-sort_type').val(store.get('dbviewer_sort_type')).change();
                 }
             }
@@ -847,7 +880,7 @@ window.DBViewerView = countlyView.extend({
             });
 
             // when the filter button fired
-            $("#dbviewer-apply-filter-button").on('click', function() {
+            $('body').off('click', '#dbviewer-apply-filter-button').on('click', "#dbviewer-apply-filter-button", function() {
                 $('.dbviewer-filter-status').css({ "display": "block" });
                 // prepare projection by input values
                 var projection = {};
@@ -862,6 +895,17 @@ window.DBViewerView = countlyView.extend({
                     self.selected_projection = {};
                     self.projection = {};
                     store.remove('dbviewer_projection_values');
+                }
+                if (store.get('dbviewer_sort_show') && $('#dbviewer-sort-select').val() !== "") {
+                    store.set('dbviewer_sort_value', $('#dbviewer-sort-select').val());
+                    self.sort[$('#dbviewer-sort-select')] = store.get('dbviewer_sort_type');
+                    $('#dbviewer-sort-select')[0].selectize.addOption(store.get('dbviewer_sort_value'));
+                    $('#dbviewer-sort-select')[0].selectize.addItem(store.get('dbviewer_sort_value'));
+                }
+                else {
+                    self.sort = {};
+                    store.remove('dbviewer_sort_value');
+                    store.remove('dbviewer_sort_type');
                 }
                 // prepare filter by input values
                 var filter = $(".dbviewer-collection-filter").val() === "" ? JSON.stringify({}) : $(".dbviewer-collection-filter").val();
@@ -947,9 +991,15 @@ window.DBViewerView = countlyView.extend({
     },
     accordion: function() {
         var self = this;
+        var dbs = {
+            countly: 0,
+            countly_drill: 1,
+            countly_out: 2,
+            countly_fs: 3
+        };
         $("#accordion").accordion({
             collapsible: true,
-            active: (self.db === "countly_drill") ? 1 : 0
+            active: dbs[self.db]
         });
         $("#accordion a").removeClass("selected");
         $("#accordion a[href='#" + Backbone.history.fragment + "']").addClass("selected");
@@ -1032,11 +1082,6 @@ $(document).ready(function() {
         CountlyHelpers.loadJS("dbviewer/javascripts/json.human.js");
         CountlyHelpers.loadJS("dbviewer/javascripts/jquery.json-viewer.js");
     }
-    var menu = '<a href="#/manage/db" class="item">' +
-		'<div class="logo-icon fa fa-database"></div>' +
-		'<div class="text" data-localize="dbviewer.title"></div>' +
-		'</a>';
-    if ($('#management-submenu .help-toggle').length) {
-        $('#management-submenu .help-toggle').before(menu);
-    }
+
+    app.addSubMenu("management", {code: "db", url: "#/manage/db", text: "dbviewer.title", priority: 50});
 });
