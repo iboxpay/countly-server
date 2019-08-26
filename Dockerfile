@@ -20,31 +20,28 @@ RUN  useradd -r -M -U -d /opt/countly -s /bin/false countly && \
 	/opt/countly/bin/countly.install.sh
 
 ## Add MongoDB data volume
-# VOLUME ["/var/lib/mongodb"]
+VOLUME ["/var/lib/mongodb"]
 
 # Change MongoDB folder permissions and add services folders
-# RUN chown -R mongodb:mongodb /var/lib/mongodb && \
-    # mkdir /etc/service/mongodb
-
-RUN mkdir /etc/service/nginx && \
+RUN chown -R mongodb:mongodb /var/lib/mongodb && \
+    mkdir /etc/service/mongodb && \
+    mkdir /etc/service/nginx && \
+    mkdir /etc/service/countly-api && \
+    mkdir /etc/service/countly-dashboard && \
     echo "" >> /etc/nginx/nginx.conf && \
     echo "daemon off;" >> /etc/nginx/nginx.conf
-
-RUN mkdir /etc/service/countly-api && \
-    mkdir /etc/service/countly-dashboard
-    
+        
 # Add services' run scripts
-# ADD ./bin/commands/docker/mongodb.sh /etc/service/mongodb/run
+ADD ./bin/commands/docker/mongodb.sh /etc/service/mongodb/run
 ADD ./bin/commands/docker/nginx.sh /etc/service/nginx/run
 
 ADD ./bin/commands/docker/countly-api.sh /etc/service/countly-api/run
 ADD ./bin/commands/docker/countly-dashboard.sh /etc/service/countly-dashboard/run
 
 # Only root can change run scripts
-# RUN chown mongodb /etc/service/mongodb/run && \
-RUN chown root /etc/service/nginx/run
-
-RUN	chown -R countly:countly /opt/countly
+RUN chown mongodb /etc/service/mongodb/run && \
+    chown root /etc/service/nginx/run && \
+    chown -R countly:countly /opt/countly
 
 EXPOSE 80
 
