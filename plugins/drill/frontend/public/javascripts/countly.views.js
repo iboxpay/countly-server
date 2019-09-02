@@ -46,6 +46,14 @@ window.DrillView = countlyView.extend({
           }else{
             $(".only-2by").hide();
           }
+          if (this._filter.setFilter == "times" && countlyCommon.getPersistentSettings().drillMetricType != 'times') {
+            countlyCommon.setPersistentSettings({ drillMetricType: 'times' });
+            $(".value").find(".button[data-value='" + countlyCommon.getPersistentSettings().drillMetricType + "']").trigger('click');
+          }
+          else if (this._filter.setFilter == "users" && countlyCommon.getPersistentSettings().drillMetricType != 'users') {
+            countlyCommon.setPersistentSettings({ drillMetricType: 'users' });
+            $(".value").find(".button[data-value='" + countlyCommon.getPersistentSettings().drillMetricType + "']").trigger('click');
+          }
         }
 
         var limit = undefined;
@@ -344,14 +352,13 @@ window.DrillView = countlyView.extend({
         $("#drill").find("#geo-chart").show();
         $("#drill").find("#dashboard-graph").hide();
 
-        var countries = this.getFilterTicks(),
-            values = this.getFilterTickValues(),
+        var values = this.getFilterTickValues(),
             mapData = [];
 
-        for (var i = 0; i < countries.length; i++) {
+        for (var i = 0; i < values.length; i++) {
             mapData.push({
-                country:countries[i],
-                value:values[i]
+                country:values[i].tick,
+                value:values[i].data
             });
         }
 
@@ -406,6 +413,10 @@ window.DrillView = countlyView.extend({
                 continue;
             }
 
+            if (typeof tickValues[i][1] == "undefined" || !tickValues[i][1]) {
+                tickValues[i][1] = 0;
+            }
+
             combinedArr.push({
                 tick:ticks[i][1],
                 data:Math.round(tickValues[i][1]*100) / 100
@@ -414,7 +425,7 @@ window.DrillView = countlyView.extend({
 
         combinedArr = _.sortBy(combinedArr, function(obj) { return obj.tick; });
 
-        return _.compact(_.pluck(combinedArr, "data"));
+        return combinedArr;
     },
     isFilterInt:function () {
         var vals = this.getFilterTicks(),
@@ -448,36 +459,47 @@ window.DrillView = countlyView.extend({
             currBucket = countlySegmentation.getBucket(),
             $graphSettings = $(".graph-settings"),
             showBuckets = false;
-
+        
         $graphSettings.find(".bucket .button").hide();
         $graphSettings.find(".bucket").hide();
         var allowedBuckets = {};
         
-        if (numberOfDays == 1) {
-            allowedBuckets["hourly"] = true;
-        } else {
-            if (numberOfDays <= 7) {
-                allowedBuckets["hourly"] = true;
-                allowedBuckets["daily"] = true;
+        if (this._task) {
+            var request = countlyTaskManager.getResult(this._task).request;
+            if (request && request.json && request.json.bucket) {
+                allowedBuckets[request.json.bucket] = true;
             }
             else {
-                if (numberOfDays >= 30) {
-                    allowedBuckets["weekly"] = true;
-                    allowedBuckets["daily"] = true;
-                }
-
-                if (numberOfDays >= 60) {
-                    allowedBuckets["monthly"] = true;
-                }
+                allowedBuckets["daily"] = true;
             }
         }
+        else {
+            if (numberOfDays == 1) {
+                allowedBuckets["hourly"] = true;
+            } else {
+                if (numberOfDays <= 7) {
+                    allowedBuckets["hourly"] = true;
+                    allowedBuckets["daily"] = true;
+                }
+                else {
+                    if (numberOfDays >= 30) {
+                        allowedBuckets["weekly"] = true;
+                        allowedBuckets["daily"] = true;
+                    }
         
-        if (period === "day") {
-            allowedBuckets["daily"] = true;
-        }
-        
-        if (period === "month") {
-            allowedBuckets["monthly"] = true;
+                    if (numberOfDays >= 60) {
+                        allowedBuckets["monthly"] = true;
+                    }
+                }
+            }
+            
+            if (period === "day") {
+                allowedBuckets["daily"] = true;
+            }
+            
+            if (period === "month") {
+                allowedBuckets["monthly"] = true;
+            }
         }
         
         var buckets = Object.keys(allowedBuckets);
@@ -493,7 +515,7 @@ window.DrillView = countlyView.extend({
         if (buckets.length > 1) {
             showBuckets = true;
         }
-
+        
         if (currBucket) {
             this.graphBucket = currBucket;
             countlySegmentation.setBucket(currBucket);
@@ -503,22 +525,29 @@ window.DrillView = countlyView.extend({
         }
         $graphSettings.find(".bucket .button").removeClass("active");
         $graphSettings.find(".bucket .button[data-bucket="+this.graphBucket+"]").addClass("active");
-
+        
         if (this.graphType == "line" && showBuckets && !countlySegmentation.isHistogram() && !countlySegmentation.isMap()) {
             $graphSettings.find(".bucket").show();
         }
-
+        
         var bucketButtons = $graphSettings.find(".bucket .button");
-
+        
         bucketButtons.removeClass("first").removeClass("last");
         bucketButtons.not(':hidden').first().addClass("first");
         bucketButtons.not(':hidden').last().addClass("last");
+        
+        $graphSettings.find(".value.button-selector .button").removeClass("active");
+        $graphSettings.find(".value.button-selector .button[data-value=" + this.graphVal + "]").addClass("active");
+        
     },
     fillTable:function() {
         var currEvent = countlySegmentation.getEvent();
         var self = this;
         var hasSum = false;
         var hasDuration = false;
+        if (this.dtable) {
+            this.dtable.fnDestroy();
+        }
         if (this.byVal == "") {
             this.drillChartData = countlySegmentation.getSegmentationDP().chartData;
 
@@ -539,7 +568,6 @@ window.DrillView = countlyView.extend({
                 aoColumns.push({ "mData": "dur", sType:"formatted-num", "mRender":function(d) { return countlyCommon.formatSecond(d); }, "sTitle": jQuery.i18n.map["drill.dur"] });
                 aoColumns.push({ "mData": "adur", sType:"formatted-num", "mRender":function(d) { return countlyCommon.formatSecond(d); }, "sTitle": jQuery.i18n.map["drill.dur-users"] });
             }
-            $('#drill-table').html('');
             this.dtable = $('#drill-table').dataTable($.extend({}, $.fn.dataTable.defaults, {
                 "aaData": this.drillChartData || [],
                 "aoColumns": aoColumns
@@ -549,7 +577,6 @@ window.DrillView = countlyView.extend({
             this.drillChartData = countlySegmentation.getSegmentationDPWithProjection().aggregatedChartData;
 
             $("#drill-table-for").hide();
-            $('#drill-table').html('');
             if (countlySegmentation.isMap()) {
                 for (var i = 0; i < this.drillChartData.length; i++) {
                     this.drillChartData[i].curr_segment = countlyLocation.getCountryName(this.drillChartData[i].curr_segment);
@@ -585,11 +612,17 @@ window.DrillView = countlyView.extend({
                 if (Object.prototype.toString.call(period) === '[object Array]'){
                     period = JSON.stringify(period);
                 }
+                
+                var limit = countlyGlobal.projection_limit;
+                if (countlyGlobal.apps && countlyGlobal.apps[countlyCommon.ACTIVE_APP_ID] && countlyGlobal.apps[countlyCommon.ACTIVE_APP_ID].plugins && countlyGlobal.apps[countlyCommon.ACTIVE_APP_ID].plugins.drill && typeof countlyGlobal.apps[countlyCommon.ACTIVE_APP_ID].plugins.drill.projection_limit !== "undefined") {
+                    limit = countlyGlobal.apps[countlyCommon.ACTIVE_APP_ID].plugins.drill.projection_limit;
+                }
+                        
                 this.dtable = $('#drill-table').dataTable($.extend({}, $.fn.dataTable.defaults, {
                     "aaSorting": [[ 1, "desc" ]],
                     "bServerSide": true,
                     "bFilter": false,
-                    "iDisplayLength": countlyGlobal.projection_limit,
+                    "iDisplayLength": limit,
                     "sAjaxSource": countlyCommon.API_PARTS.data.r + "?api_key="+countlyGlobal.member.api_key+"&app_id="+countlyCommon.ACTIVE_APP_ID+"&method=segmentation&list=true",
                     "fnServerData": function ( sSource, aoData, fnCallback ) {
                             self.request = $.ajax({
@@ -618,6 +651,7 @@ window.DrillView = countlyView.extend({
                                     var total = skip + limit*2;
                                     if(data.page_data && data.page_data.total)
                                         total = data.page_data.total;
+                                    data.data = data.data || [];
                                     for(var i = 0; i < data.data.length; i++){
                                         data.data[i].curr_segment = data.data[i]._id;
                                         data.data[i].a = countlyCommon.safeDivision(data.data[i].t, data.data[i].u);
@@ -638,6 +672,9 @@ window.DrillView = countlyView.extend({
                         var found = 0;
                         var columns = ["_id","u","t",null];
                         var limit = countlyGlobal.projection_limit;
+                        if (countlyGlobal.apps && countlyGlobal.apps[countlyCommon.ACTIVE_APP_ID] && countlyGlobal.apps[countlyCommon.ACTIVE_APP_ID].plugins && countlyGlobal.apps[countlyCommon.ACTIVE_APP_ID].plugins.drill && typeof countlyGlobal.apps[countlyCommon.ACTIVE_APP_ID].plugins.drill.projection_limit !== "undefined") {
+                            limit = countlyGlobal.apps[countlyCommon.ACTIVE_APP_ID].plugins.drill.projection_limit;
+                        }
                         if(hasSum){
                             columns.push("s");
                             columns.push(null);
@@ -705,7 +742,7 @@ window.DrillView = countlyView.extend({
 
                 tmpItem.addClass("item");
                 if (segment === "") {
-                  segment = "(N/A)";
+                  segment = "N/A";
                 }
                 tmpItem.attr("data-value", segment);
 
@@ -742,10 +779,6 @@ window.DrillView = countlyView.extend({
             }
 
             var drillChartCol = tableFor;
-
-            if (drillChartCol === "(N/A)") {
-              drillChartCol = "";
-            }
 
             this.dtable = $('#drill-table').dataTable($.extend({}, $.fn.dataTable.defaults, {
                 "aaData": this.drillChartData[drillChartCol] || [],
@@ -1437,6 +1470,10 @@ window.DrillView = countlyView.extend({
                         success:function (result) {
                             self.fillBookmarks();
                             $("#bookmark-widget-drawer").removeClass("open");
+                            CountlyHelpers.notify({
+                                title: jQuery.i18n.map["common.success"],
+                                message: jQuery.i18n.map["drill.save-bookmark-remind"]
+                            });
                         }
                     });
                 }else{
@@ -1532,6 +1569,10 @@ window.DrillView = countlyView.extend({
                 }
                 return countlySegmentation.saveReportTask(data,function(){
                     $("#report-widget-drawer").removeClass("open");
+                    CountlyHelpers.notify({
+                        title: jQuery.i18n.map["common.success"],
+                        message: autoRefresh ? jQuery.i18n.map["drill.auto-refresh-report-remind"] : jQuery.i18n.map["drill.one-time-report-remind"]
+                    });
                 });
             })
 
@@ -1981,20 +2022,51 @@ function extendViewWithFilter(view){
               setTimeout(function(){
                 var currentQuery = $(self).parents(".query");
                 var operator = currentQuery.find(".filter-type .text").data("value");
+                var type = currentQuery.find(".filter-name .text").data("type");
                 var stringInput = currentQuery.find(".filter-name").siblings(".filter-value.string");
                 var listInput = currentQuery.find(".filter-name").siblings(".filter-value.list");
+                var dateInput = currentQuery.find(".filter-name").siblings(".filter-value.date");
+                var numInput = currentQuery.find(".filter-name").siblings(".filter-value.num");
+                var staticListInput = currentQuery.find(".filter-name").siblings(".filter-value.static-list");
                 if (operator.startsWith("rgx")) {
-                  if (stringInput.hasClass("hidden")) {
-                    listInput.addClass("hidden").addClass("hidden-by-regex");
-                    stringInput.removeClass("hidden");
+                    if (stringInput.hasClass("hidden")) {
+                        listInput.addClass("hidden").addClass("hidden-by-regex");
+                        stringInput.removeClass("hidden");
+                        listInput.find(".text").text("");
+                        listInput.find(".text").data("value","");
+                    }
+                } else if (operator === "pseset") {
+                    stringInput.addClass("hidden");
+                    stringInput.find("input").val("");
+                    dateInput.addClass("hidden");
+                    dateInput.find("input").val("");
+                    numInput.addClass("hidden");
+                    numInput.find("input").val("");
+                    staticListInput.removeClass("hidden");
+                    staticListInput.find(".text").text("");
+                    staticListInput.find(".text").data("value", "");
+                    listInput.addClass("hidden");
                     listInput.find(".text").text("");
                     listInput.find(".text").data("value","");
-                  }
+                    view.setUpFilterValues(currentQuery.find(".filter-value.static-list .select-items>div"), [true, false], [jQuery.i18n.map["drill.opr.is-set-true"], jQuery.i18n.map["drill.opr.is-set-false"]]);
                 } else {
                   if (listInput.hasClass("hidden-by-regex")){
                     listInput.removeClass("hidden").removeClass("hidden-by-regex");
                     stringInput.addClass("hidden");
                     stringInput.find("input").val("");
+                  }
+                  staticListInput.addClass("hidden");
+                  if (type === "l" || type === "bl"){
+                    listInput.removeClass("hidden");
+                  }
+                  if (type === "n"){
+                    numInput.removeClass("hidden");
+                  }
+                  if (type === "d"){
+                    dateInput.removeClass("hidden");
+                  }
+                  if (type === "s"){
+                    stringInput.removeClass("hidden");
                   }
                 }
               },0);
@@ -2129,6 +2201,24 @@ function extendViewWithFilter(view){
                     } else {
                       $(this).parents(".filter-name").siblings(".filter-type").find(".item.rgx").hide();
                     }
+                    var existingFilters = []; 
+                    $(".query:visible:not(.by)").each(function (index) {
+                        existingFilters.push({
+                            property : $(this).find(".filter-name .text").data("value"),
+                            operator : $(this).find(".filter-type .text").data("value")
+                        });
+                    });
+                    var property = $(this).data("value");
+                    var doesOperatorRepeat = existingFilters.map(function(filter) {
+                        return filter.property == property && filter.operator == "pseset";
+                    }).reduce(function (acc, val) {
+                        return acc || val;
+                    }, false);
+                    if (countlySegmentation.isFieldCompatibleWith("pseset", $(this).data("value"), $(this).data("type")) && !doesOperatorRepeat) {
+                        $(this).parents(".filter-name").siblings(".filter-type").find(".item.pseset").show();
+                    } else {
+                        $(this).parents(".filter-name").siblings(".filter-type").find(".item.pseset").hide();
+                    }
                 }
 
                 $(this).parents(".query").find(".filter-value.num input").val("");
@@ -2145,6 +2235,10 @@ function extendViewWithFilter(view){
 
                     countlySegmentation.getBigListMetaData(prop, null, function(values, names){
                         var propvalue = rootHTML.parents(".query").data("query_value");
+                        var list_limit = countlyGlobal["list_limit"];
+                        if (countlyGlobal.apps && countlyGlobal.apps[countlyCommon.ACTIVE_APP_ID] && countlyGlobal.apps[countlyCommon.ACTIVE_APP_ID].plugins && countlyGlobal.apps[countlyCommon.ACTIVE_APP_ID].plugins.drill && typeof countlyGlobal.apps[countlyCommon.ACTIVE_APP_ID].plugins.drill.list_limit !== "undefined") {
+                            list_limit = countlyGlobal.apps[countlyCommon.ACTIVE_APP_ID].plugins.drill.list_limit;
+                        }
                         if(propvalue && propvalue!="" && values.indexOf(propvalue)==-1)//is passed and not in current list
                         {
                             rootHTML.parents(".query").data("query_value","");//removes attribute
@@ -2157,7 +2251,7 @@ function extendViewWithFilter(view){
                                     if(values.length!=names.length && names.indexOf(names2[z]==-1))//because sometimes it is the same array
                                         names.push(names2[z]);
                                 }
-                                self.setUpFilterValues(rootHTML, values, names,  names.length >= countlyGlobal["list_limit"]);//adds from select to list
+                                self.setUpFilterValues(rootHTML, values, names,  names.length >= list_limit);//adds from select to list
                                 var timeout = null;
 
                             });
@@ -2165,7 +2259,7 @@ function extendViewWithFilter(view){
                         else
                         {
                             rootHTML.parents(".query").find(".filter-value").removeClass("loading");
-                            self.setUpFilterValues(rootHTML, values, names,  names.length >= countlyGlobal["list_limit"]);
+                            self.setUpFilterValues(rootHTML, values, names,  names.length >= list_limit);
                             var timeout = null;
                         }
                         rootHTML.parents(".query").find(".filter-value").on("keyup", ".search input", function(e) {
@@ -2182,7 +2276,7 @@ function extendViewWithFilter(view){
                             timeout = setTimeout(function(){
                                 countlySegmentation.getBigListMetaData(prop, search, function(values, names){
                                     parent.find(".table-loader").remove();
-                                    self.setUpFilterValues(rootHTML, values, names, names.length >= countlyGlobal["list_limit"]);
+                                    self.setUpFilterValues(rootHTML, values, names, names.length >= list_limit);
                                 });
                             }, 1000);
                         });
@@ -2213,6 +2307,10 @@ function extendViewWithFilter(view){
             });
 
             $segmentation.on("keyup", ".filter-value input",function(event) {
+                self.initApply();
+            });
+
+            $segmentation.on("change", ".filter-value input", function(event) {
                 self.initApply();
             });
 
@@ -2363,13 +2461,16 @@ function extendViewWithFilter(view){
                 self.adjustFilters();
             });
 
+            if(self.bookmarkList)
+                    $("#drill-actions").addClass("visible");
+
             $segmentation.on("click", "#apply-filter:not(.disabled)", function() {
                 if ($(this).hasClass("disabled")) {
                     return true;
                 }
 
-                if(self.bookmarkList)
-                    $("#drill-actions").addClass("visible");
+                // if(self.bookmarkList)
+                //     $("#drill-actions").addClass("visible");
 
                 var filterData = self.getFilterObjAndByVal();
 
@@ -2518,7 +2619,7 @@ function extendViewWithFilter(view){
             var filterData = this.getFilterObjAndByVal();
 
             if (_.isEmpty(filterData.dbFilter) && filterData.byVal == "") {
-                $("#drill-actions").removeClass("visible");
+                // $("#drill-actions").removeClass("visible");
                 $("#apply-filter").addClass("disabled");
             } else {
                 $("#apply-filter").removeClass("disabled");
@@ -2584,7 +2685,7 @@ function extendViewWithFilter(view){
                 byVal = "",
                 byValText = "",
                 bookmarkText = "";
-            var operators = {'$gte':'>=', '$lte':'<=', '$gt':'>', '$lt':'<', '=':'=', '!=':'!=', 'rgxcn': 'contains'};
+            var operators = {'$gte':'>=', '$lte':'<=', '$gt':'>', '$lt':'<', '=':'=', '!=':'!=', 'rgxcn': 'contains', 'pseset': 'isset'};
             $("#filter-blocks").find(".query").each(function (index) {
                 var tmpConnector = $(this).find(".filter-connector .text").data("value"),
                     tmpText = $(this).find(".filter-name .text").text(),
@@ -2592,19 +2693,21 @@ function extendViewWithFilter(view){
                     tmpValText = $(this).find(".filter-value.num input").val() ||
                         $(this).find(".filter-value.date input").val() ||
                         $(this).find(".filter-value.string input").val() ||
-                        $(this).find(".filter-value .text").text(),
+                        $(this).find(".filter-value.list .text").text() ||
+                        $(this).find(".filter-value.static-list .text").text(),
                     tmpName = $(this).find(".filter-name .text").data("value"),
                     tmpType = $(this).find(".filter-type .text").data("value"),
                     tmpVal = $(this).find(".filter-value.num input").val() ||
                         $(this).find(".filter-value.date input").data("timestamp") ||
                         $(this).find(".filter-value.string input").val() ||
-                        $(this).find(".filter-value .text").data("value"),
+                        $(this).find(".filter-value.list .text").data("value") ||
+                        $(this).find(".filter-value.static-list .text").data("value"),
                     tmpDataType = $(this).find(".filter-name .text").data("type");
 
                 if(typeof tmpVal == "boolean")
                     tmpVal = tmpVal+"";
                 if (tmpConnector != "BY") {
-                    if (!tmpVal) {
+                    if (typeof tmpVal !== "number" && !tmpVal) {
                         return true;
                     }
 
@@ -2630,7 +2733,7 @@ function extendViewWithFilter(view){
                         filterObjConnects[tmpName] = [];
                     }
 
-                    if (tmpDataType == "d" || tmpDataType == "n" || (tmpName && tmpName.indexOf("custom.") === 0 && $.isNumeric(tmpVal))) {
+                    if ($.isNumeric(tmpVal) && (tmpDataType == "d" || tmpDataType == "n" || (tmpName && tmpName.indexOf("custom.") === 0))) {
                         tmpVal = parseInt(tmpVal, 10);
                     }
 
@@ -2638,7 +2741,7 @@ function extendViewWithFilter(view){
 
                     if (tmpType == "=" || tmpType == "!=") {
                         exp = tmpVal;
-                    } else if (tmpType.startsWith("rgx")){
+                    } else if (tmpType.startsWith("rgx") || tmpType.startsWith("pse")){
                         exp[tmpType] = [tmpVal];
                     } else {
                         exp[tmpType] = tmpVal;
@@ -2842,10 +2945,17 @@ function addDrill(drillId, drillVal, drillSection){
         query["dbFilter"] = {};
         query["byVal"] = drillId;
     }
+    // predefined cases for analytics/users and analytics/sessions
+    if (drillId === "u") {
+        query["setFilter"] = "users";
+    }
+    else if (drillId === "s") {
+        query["setFilter"] = "times";
+    }
     drillVal = drillVal || {};
     var str = '<div title="Drill down this data with Countly Drill" id="drill-down-for-view" data-drill-query=\''+JSON.stringify(query)+'\' ';
-    str += 'class="icon-button light" style="font-size: 14px; padding: 5px 5px 4px 5px; margin: 6px 0 0 13px; border-radius: 15px;">'+
-        '<span class="fa fa-sort-amount-desc" style="color:#86BB64;"></span>'+
+    str += 'class="icon-button light">'+
+        '<span class="ion-android-funnel" style="color:#86BB64;"></span>'+
     '</div>';
     return str;
 }
@@ -3049,14 +3159,7 @@ app.addPageScript("/custom#", function () {
 });
 
 $( document ).ready(function() {
-    var menu = '<a href="#/drill" class="item analytics" id="sidebar-drill">'+
-        '<div class="logo ion-android-funnel"></div>'+
-        '<div class="text" data-localize="drill.drill">Drill</div>'+
-    '</a>';
-    if($('.sidebar-menu #management-menu').length)
-        $('.sidebar-menu #management-menu').before(menu);
-    else
-        $('.sidebar-menu ').append(menu);
+    app.addMenu("explore", {code:"drill", url:"#/drill", text:"drill.drill", icon:'<div class="logo ion-android-funnel"></div>', priority:30});
 
     //check if configuration view exists
     if(app.configurationsView){
@@ -3562,6 +3665,7 @@ function initializeDrillWidget() {
                             arrayToName(filter[i].$lt, i, "<", parts);
                             arrayToName(filter[i].$lte, i, "<=", parts);
                             arrayToName(filter[i].rgxcn, i, "contains", parts);
+                            arrayToName(filter[i].pseset, i, "isset", parts);
                         }
 
                         if(parts.length){

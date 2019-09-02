@@ -29,6 +29,7 @@
 #segmentation .filter-value.date { position: relative; }
 #segmentation .filter-value.date .date-picker { padding:0; right: 0; top: 23px; border: 1px solid #d0d0d0; background-color: #ffffff; }
 #segmentation .filter-value.date .date-picker .calendar-container { padding:14px; }
+button#filter-add-container { background: none; border:0; font-size: 12px; }
 #filter-add-container { overflow:hidden; height:22px; display:inline-block; margin-left:0; padding:4px 7px 3px 7px; font-size:22px; color:#CCC; text-shadow:0 1px #FFF; transition:color 0.5s; }
 #filter-add-container:hover { color:rgb(4, 10, 4); transition:color 1s; }
 #add-filter { height: 21px; display: inline-block; }
@@ -621,7 +622,8 @@
 }
 
 .cly-widebox-select .search:after {
-    font-family: 'FontAwesome';
+    font-family: 'Font Awesome 5 Free'; 
+    font-weight: 900; 
     content: "\f002";
     position: absolute;
     top: 11px;
@@ -685,8 +687,8 @@
 
 .cly-widebox-select .event-select .list .item.active:after{
    content: '\f00c';
-   font-family: FontAwesome;
-   font-weight: normal;
+   font-family: 'Font Awesome 5 Free'; 
+   font-weight: 900; 
    font-style: normal;
    margin:0px 0px 0px 3px;
    text-decoration:none;
@@ -1265,13 +1267,46 @@ opacity:0.7!important;
   position: relative;
   height: 29px;
   width: 222px!important;
-  padding: 11px 9px!important;
 }
 
 .drill-query-builder .segment-filter .string-input.date-value {
   top:-2px;
 }
 
+#drill-type-select .item .inner {
+  width: 88px;
+}
 
+.drag-handler {
+    float: left;
+    margin-right: 10px;
+}
+#drill-down-for-view {
+    font-size: 14px; 
+    padding: 5px 5px 5px 5px; 
+    margin: 6px 0 0 13px; 
+    border-radius: 15px;
+    width: 15px;
+    height: 15px;
+    text-align: center;
+}
+#drill-down-for-view span {
+    text-align: center;
+}
 
+.widget-header .title.small + #drill-down-for-view { margin-top:-3px !important; font-size: 10px !important; padding: 3px 3px 2px 3px !important; width:14px;}
+.widget-header .title.small + #drill-down-for-view span { padding-top: 0px;}
 
+.add-condition-disabled {
+  background-color: #eeb371 !important;
+  box-shadow: inset 0 0 0 1px #eeb371 !important;
+}
+.add-segmentation-disabled {
+  color: #dcc6ae !important;
+}
+.add-segmentation-disabled i {
+  color: #dcc6ae !important;
+}
+.add-segmentation-disabled span {
+  color: #dcc6ae !important;
+}

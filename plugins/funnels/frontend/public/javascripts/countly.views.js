@@ -936,14 +936,7 @@ app.addPageScript("/custom#", function () {
 $(document).ready(function () {
     if (typeof extendViewWithFilter === "function")
         extendViewWithFilter(app.funnelView);
-    var menu = '<a href="#/funnels" class="item analytics" id="sidebar-funnels">' +
-        '<div class="logo ion-funnel"></div>' +
-        '<div class="text" data-localize="sidebar.funnels"></div>' +
-        '</a>';
-    if ($('.sidebar-menu:not(#iot-type) #management-menu').length)
-        $('.sidebar-menu:not(#iot-type) #management-menu').before(menu);
-    else
-        $('.sidebar-menu:not(#iot-type)').append(menu);
+    app.addSubMenu("behavior", {code:"funnels", url:"#/funnels", text:"sidebar.funnels", priority:10});
     //check if configuration view exists
     if (app.configurationsView) {
         app.configurationsView.registerLabel("funnels", "sidebar.funnels");

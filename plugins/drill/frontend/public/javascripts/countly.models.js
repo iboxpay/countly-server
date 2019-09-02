@@ -32,8 +32,19 @@
       "up.hour":true, "hour":true, "sg.app_version":true
     }
 
+    var pseudoFieldNotAllowed = {
+        "pseset":  {"chr": true}
+    }
+
     countlySegmentation.disableRegex = function(fieldName){
         regexNotAllowed[fieldName] = true;
+    }
+
+    countlySegmentation.isFieldCompatibleWith = function(operatorType, fieldName, fieldType){
+        if (!pseudoFieldNotAllowed[operatorType]){
+            return false;
+        }
+        return pseudoFieldNotAllowed[operatorType][fieldName] !== true;
     }
 
     countlySegmentation.isFieldRegexable = function(fieldName, fieldType){
@@ -209,9 +220,15 @@
             }
         }
 
+        var list_limit = countlyGlobal["custom_property_limit"];
+        if (countlyGlobal.apps && countlyGlobal.apps[countlyCommon.ACTIVE_APP_ID] && countlyGlobal.apps[countlyCommon.ACTIVE_APP_ID].plugins && countlyGlobal.apps[countlyCommon.ACTIVE_APP_ID].plugins.drill && typeof countlyGlobal.apps[countlyCommon.ACTIVE_APP_ID].plugins.drill.custom_property_limit !== "undefined") {
+            list_limit = countlyGlobal.apps[countlyCommon.ACTIVE_APP_ID].plugins.drill.custom_property_limit;
+        }
+
+                            
         if (_segmentationDbMeta && _segmentationDbMeta.custom) {
             segmentationDbMetaWithIds.push({ name:jQuery.i18n.map["drill.user-custom"]});
-            var limit = countlyGlobal.custom_property_limit || 20;
+            var limit = list_limit || 20;
             for (var segKey in _segmentationDbMeta.custom) {
                 limit--;
                 if(limit < 0)
@@ -222,7 +239,6 @@
 
         if (_segmentationDbMeta && _segmentationDbMeta.cmp && countlyGlobal["apps"][countlyCommon.ACTIVE_APP_ID].type != "iot") {
             segmentationDbMetaWithIds.push({ name:jQuery.i18n.map["drill.cmp-props"]});
-            var limit = countlyGlobal.custom_property_limit || 20;
             var langs = {
                 pl:jQuery.i18n.map["attribution.platform"],
                 b:jQuery.i18n.map["attribution.browser"],
@@ -231,6 +247,7 @@
                 m:jQuery.i18n.map["attribution.mobile"]
             };
             segmentationDbMetaWithIds.push({ id:"cmp.c", name:jQuery.i18n.map["drill.cmp_c"], type:_segmentationDbMeta.cmp["c"].type });
+            var limit = list_limit || 20;
             for (var segKey in _segmentationDbMeta.cmp) {
                 limit--;
                 if(limit < 0)
@@ -290,17 +307,23 @@
         if(_event.indexOf("[CLY]_") == 0){
             var values = _filterNames[filter + ""] || [];
             var newValues = [];
+
             for(var i = 0; i < values.length; i++){
                 if(_event == "[CLY]_crash" && filter == "sg.crash" && countlyCrashes)
                     newValues.push(countlyCrashes.getCrashName(values[i]));
                 else if(_event == "[CLY]_view" && (filter == "sg.start" || filter == "sg.exit" || filter == "sg.bounce")){
                     newValues.push("true");
                 }
-                else
+                else if (filter == "up.rgn" && (typeof countlyLocation !== 'undefined')) {
+                    newValues.push(countlyLocation.getRegionName(values[i]) || values[i]);
+                }
+                else {
                     newValues.push(values[i]);
+                }
             }
             return newValues;
         }
+
         return _filterNames[filter + ""] || [];
     };
     countlySegmentation.saveReportTask =  function(data, callback){
@@ -556,7 +579,7 @@
                 chartDP[5].data[chartDP[5].data.length-1][0] = i;
                 chartDP[5].data[chartDP[5].data.length-1][1] = 0;
 
-                chartData.push({ date:moment(_periodObj.currentPeriodArr[i], "YYYY.M.D").format("D MMM YYYY"), t:0, u:0, a:0, s:0, as:0, dur:0, adur:0});
+                chartData.push({ date:moment(_periodObj.currentPeriodArr[i], "YYYY.M.D").format(countlyCommon.getDateFormat("D MMM YYYY")), t:0, u:0, a:0, s:0, as:0, dur:0, adur:0});
             }
 
             for (var day in _segmentationDb.data) {
@@ -832,7 +855,12 @@
             }
 
             pieChartDP.userDP.dp.push({data:[], label:countlySegmentation.getMultiUserPropertyLongName(_projectionKey, segmentReadable)});
-            pieChartDP.userDP.dp[i].data.push([0, _segmentationDb[currSegment].us]);
+            if (typeof _segmentationDb[currSegment].us !== "undefined") {
+                pieChartDP.userDP.dp[i].data.push([0, _segmentationDb[currSegment].us]);
+            }
+            else {
+                pieChartDP.userDP.dp[i].data.push([0, _segmentationDb[currSegment].u]);
+            }
 
 
             pieChartDP.totalDP.dp.push({data:[],label:countlySegmentation.getMultiUserPropertyLongName(_projectionKey, segmentReadable)});
@@ -844,21 +872,34 @@
             pieChartDP.durDP.dp.push({data:[],label:countlySegmentation.getMultiUserPropertyLongName(_projectionKey, segmentReadable)});
             pieChartDP.durDP.dp[i].data.push([0, _segmentationDb[currSegment].dur]);
 
-            barChartDP.dp[0].data.push([i, _segmentationDb[currSegment].us]);
+            if (typeof _segmentationDb[currSegment].us !== "undefined") {
+                barChartDP.dp[0].data.push([i, _segmentationDb[currSegment].us]);
+            }
+            else {
+                barChartDP.dp[0].data.push([i, _segmentationDb[currSegment].u]);
+            }
             barChartDP.dp[1].data.push([i, _segmentationDb[currSegment].t]);
             barChartDP.dp[2].data.push([i, _segmentationDb[currSegment].s]);
             barChartDP.dp[3].data.push([i, _segmentationDb[currSegment].dur]);
             barChartDP.ticks.push([i, countlySegmentation.getMultiUserPropertyLongName(_projectionKey, segmentReadable)]);
+            
+            var users;
+            if (typeof _segmentationDb[currSegment].us !== "undefined") {
+                users = _segmentationDb[currSegment].us;
+            }
+            else {
+                users = _segmentationDb[currSegment].u;
+            }
 
             aggregatedChartData.push({
                 curr_segment:countlySegmentation.getMultiUserPropertyLongName(_projectionKey, segmentReadable),
                 u:_segmentationDb[currSegment].u,
                 t:_segmentationDb[currSegment].t,
-                a:safeDivision(_segmentationDb[currSegment].t, _segmentationDb[currSegment].us),
+                a:safeDivision(_segmentationDb[currSegment].t, users),
                 s:_segmentationDb[currSegment].s,
-                as:safeDivision(_segmentationDb[currSegment].s, _segmentationDb[currSegment].us),
+                as:safeDivision(_segmentationDb[currSegment].s, users),
                 dur:_segmentationDb[currSegment].dur,
-                adur:safeDivision(_segmentationDb[currSegment].dur, _segmentationDb[currSegment].us)
+                adur:safeDivision(_segmentationDb[currSegment].dur, users)
             });
 
             chartDPUser.push({data:[], label:countlySegmentation.getMultiUserPropertyLongName(_projectionKey, segmentReadable)});
@@ -1487,7 +1528,7 @@
         return keys.map(function(key, index) {
           var value = countlySegmentation.getUserPropertyLongName(key, splittedValues[index])
           if (value === undefined || value === ""){
-            return "(N/A)"
+            return "N/A"
           }
           return countlySegmentation.getUserPropertyLongName(key, splittedValues[index]);
         }).join(' | ');
@@ -1558,7 +1599,7 @@
                 break;
         }
 
-        return newValue;
+        return countlyCommon.decodeHtml(newValue);
     };
 
     countlySegmentation.getEvent = function () {
@@ -1577,9 +1618,7 @@
                 url:countlyCommon.API_PARTS.data.r+"/tasks/all",
                 data:{
                     "app_id":appId,
-                    "query": JSON.stringify({"manually_create": true, "autoRefresh": true, "type": "drill", "status": "completed"}),
-                    "period":countlyCommon.getPeriodForAjax(),
-                    "timestamp": +new Date()
+                    "query": JSON.stringify({"manually_create": true, "autoRefresh": true, "type": "drill", "status": "completed"})
                 },
                 dataType:"json",
                 success:function (json) {
@@ -1630,6 +1669,7 @@
                 _filterValues["custom." + property] = _segmentationDbMeta.custom[property].values || [];
                 _filterValues["custom." + property].sort(_sortFilter);
                 _filterNames["custom." + property] = _segmentationDbMeta.custom[property].values || [];
+                _filterNames["custom." + property] = _filterNames["custom." + property].map(countlyCommon.decodeHtml);
             }
         }
 
@@ -1646,7 +1686,7 @@
                     }
                     values = newVals;
                 }
-                _filterNames["cmp." + property] = values;
+                _filterNames["cmp." + property] = values.map(countlyCommon.decodeHtml);
             }
         }
 
@@ -1655,6 +1695,7 @@
                 _filterValues["sg." + property] = _segmentationDbMeta.sg[property].values || [];
                 _filterValues["sg." + property].sort(_sortFilter);
                 _filterNames["sg." + property] = _segmentationDbMeta.sg[property].values || [];
+                _filterNames["sg." + property] = _filterNames["sg." + property].map(countlyCommon.decodeHtml);
             }
         }
     }
@@ -1693,7 +1734,7 @@
                 }
                 break;
             default:
-                newValues = values;
+                newValues = values.map(countlyCommon.decodeHtml);
                 break;
         }
 

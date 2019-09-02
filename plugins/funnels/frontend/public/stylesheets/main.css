@@ -25,7 +25,7 @@
 #new-funnel-steps { padding-bottom: 20px; }
 #funnel-steps .funnel-step-info { display:none; }
 .funnel-events { float:left; width:30%; min-height:5px; overflow:auto; margin-left:-22px; }
-.funnel-events>div { overflow:hidden; height:95px; padding-top:35px; padding-right: 5px; white-space:nowrap; text-align: right; }
+.funnel-events>div { overflow:hidden; height:97px; padding-top:35px; padding-right: 5px; white-space:nowrap; text-align: right; }
 /* .funnel-events .tag {  background-color:#2fa732; font-family:Oswald; color:#FFF; display:inline-block; border-top-left-radius:2px; border-bottom-left-radius:2px; margin-right: -4px; white-space:nowrap; max-width:80%; height: 40px; min-width: 40%; text-align: left; vertical-align:top; } */
 .funnel-events .tag {  color: #666; font-family: Ubuntu; display:inline-block; margin-right: -4px; white-space:nowrap; max-width:80%; height: 40px; min-width: 40%; text-align: right; vertical-align:top; }
 .funnel-events .tag-tip { border-left: 15px solid #2fa732; display:inline-block; width: 0; height: 0;  border-top: 20px solid transparent; border-bottom: 20px solid transparent; }
