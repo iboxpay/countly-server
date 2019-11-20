@@ -9,17 +9,17 @@
     <div class="widget-header">
         <div class="left">
             <div style="overflow: auto;">
-            <div class="title small">Drill</div>
+            <div class="title small" data-localize="drill.drill"></div>
             </div>
 
             <div class="cly-widebox-select float" id="drill-type-select">
                 <div class="select-toggler">
-                  <span data-localize="sidebar.analytics.sessions" class="text">Sessions</span>
+                  <span data-localize="sidebar.analytics.sessions" class="text"></span>
                   <span class="arrow ion-chevron-down"></span>
                 </div>
                 <div class="square main-square">
                   <div class="select-button" id="drill-types">
-                    <div class="text-wrapper">Drill type</div>
+                    <div class="text-wrapper" data-localize="drill.drill-type"></div>
                     <div id="drill-type-sessions" data-value="clk" class="segmentation-option item">
                       <div class="inner">
                         <span class="icon sessions"><i class="material-icons">grain</i></span>
@@ -71,19 +71,19 @@
                             <div data-type="bar" class="button icon light"><span class="ion-icons ion-stats-bars"></span></div>
                         </div>
                         <div class="bucket button-selector">
-                            <div data-bucket="hourly" style="display:none;" class="button light" data-localize="drill.hourly">Hourly</div>
-                            <div data-bucket="daily" class="button light active" data-localize="drill.daily">Daily</div>
-                            <div data-bucket="weekly" class="button light" data-localize="drill.weekly">Weekly</div>
-                            <div data-bucket="monthly" class="button light" data-localize="drill.monthly">Monthly</div>
+                            <div data-bucket="hourly" style="display:none;" class="button light" data-localize="drill.hourly"></div>
+                            <div data-bucket="daily" class="button light active" data-localize="drill.daily"></div>
+                            <div data-bucket="weekly" class="button light" data-localize="drill.weekly"></div>
+                            <div data-bucket="monthly" class="button light" data-localize="drill.monthly"></div>
                         </div>
                         <div class="value button-selector">
-                            <div data-value="users" class="button light" data-localize="drill.users">Users</div>
-                            <div data-value="times" class="button light active" data-localize="drill.times">Times</div>
-                            <div data-value="average" class="button light" data-localize="drill.times-users">Times/Users</div>
-                            <div data-value="sum" class="value-sum button light" data-localize="drill.sum">Sum</div>
-                            <div data-value="sum_average" class="value-sum button light" data-localize="drill.sum-users">Sum/Users</div>
-                            <div data-value="dur" class="value-dur button light" data-localize="drill.dur">Duration</div>
-                            <div data-value="dur_average" class="value-dur button light" data-localize="drill.dur-users">Duration/Users</div>
+                            <div data-value="users" class="button light" data-localize="drill.users"></div>
+                            <div data-value="times" class="button light active" data-localize="drill.times"></div>
+                            <div data-value="average" class="button light" data-localize="drill.times-users"></div>
+                            <div data-value="sum" class="value-sum button light" data-localize="drill.sum"></div>
+                            <div data-value="sum_average" class="value-sum button light" data-localize="drill.sum-users"></div>
+                            <div data-value="dur" class="value-dur button light" data-localize="drill.dur"></div>
+                            <div data-value="dur_average" class="value-dur button light" data-localize="drill.dur-users"></div>
                         </div>
                     </div>
                 </div>
@@ -96,7 +96,7 @@
                 </div>
             </div>
             <div id="empty-graph" class="no-data">
-                <span data-localize="drill.no-data">There is no data to show for this period</span>
+                <span data-localize="drill.no-data"></span>
             </div>
             <div id="label-container">
                 <div class="labels"></div>
@@ -111,19 +111,19 @@
     </div>
     <div style="margin-top:25px;">
         <ul id="drill-tabs">
-          <li><a data-open="filter-view" class="menu active" data-localize="drill.tab.querybuilder">QUERY BUILDER</a></li>
-          <li><a data-open="bookmark-view" class="menu" data-localize="drill.tab.bookmarks">BOOKMARKS</a></li>
-          <li><a data-open="table-view" class="menu" data-localize="drill.tab.table">DATA TABLE</a></li>
+          <li><a data-open="filter-view" class="menu active" data-localize="drill.tab.querybuilder"></a></li>
+          <li><a data-open="bookmark-view" class="menu" data-localize="drill.tab.bookmarks"></a></li>
+          <li><a data-open="table-view" class="menu" data-localize="drill.tab.table"></a></li>
         </ul>
         {{> filter-view }}
         <div id="table-view" class="navigation-menu" style="display:none;">
             <div id="drill-table-for" class="widget-header" style="display:none;">
                 <div class="left" style="float:none">
                     <div style="overflow: auto;">
-                      <div class="title small" data-localize="drill.tab.table">DATA TABLE</div>
+                      <div class="title small" data-localize="drill.tab.table"></div>
                     </div>
                 </div>
-                <div style="float: left;padding-top: 6px;margin-right: 0px;color: #444;font-family: Ubuntu;font-size: 13px;margin-left: 5px;" data-localize="drill.display-table">for</div>
+                <div style="float: left;padding-top: 3px;margin-right: 0px;color: #444;font-family: Ubuntu;font-size: 13px;margin-left: 5px;" data-localize="drill.display-table"></div>
                 <div class="cly-select float" style="max-width:250px;">
                     <div class="select-inner">
                         <div class="text-container">
@@ -142,21 +142,21 @@
             <div id="bookmark-table-for" class="widget-header">
                 <div class="left" style="float:none">
                     <div style="overflow: auto;">
-                      <div class="title small" data-localize="drill.tab.bookmarks">BOOKMARKS</div>
+                      <div class="title small" data-localize="drill.tab.bookmarks"></div>
                     </div>
                 </div>
-                <div style="float: left;padding-top: 6px;margin-right: 0px;color: #444;font-family: Ubuntu;font-size: 13px;margin-left: 5px;" data-localize="drill.display-table">for</div>
+                <div style="float: left;padding-top: 3px;margin-right: 0px;color: #444;font-family: Ubuntu;font-size: 13px;margin-left: 5px;" data-localize="drill.display-table"></div>
                 <div class="cly-select float" style="max-width:250px;">
                     <div class="select-inner">
                         <div class="text-container">
-                            <div data-value="0" class="text" data-localize="drill.bookmark.selected">Selected Metric</div>
+                            <div data-value="0" class="text" data-localize="drill.bookmark.selected"></div>
                         </div>
                         <div class="right combo"></div>
                     </div>
                     <div class="select-items square" style="width:150px;">
                         <div>
-                          <div class="item" data-value="0" data-localize="drill.bookmark.selected">Selected Metric</div>
-                          <div class="item" data-value="1" data-localize="drill.bookmark.all">All Metrics</div>
+                          <div class="item" data-value="0" data-localize="drill.bookmark.selected"></div>
+                          <div class="item" data-value="1" data-localize="drill.bookmark.all"></div>
                         </div>
                     </div>
                 </div>
@@ -167,8 +167,8 @@
                         <th style="width:45px;"></th>
                         <th data-localize="drill.table-bookmark-name"></th>
                         <th style="width:8%;" data-localize="drill.table-bookmark-visibility"></th>
-                        <th data-localize="drill.query">Query</th>
-                        <th data-localize="drill.by-query">By</th>
+                        <th data-localize="drill.query"></th>
+                        <th data-localize="drill.by-query"></th>
 
                     </tr>
                 </thead>

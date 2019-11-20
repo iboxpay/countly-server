@@ -2,6 +2,7 @@ var plugin = {},
     crypto = require('crypto'),
     plugins = require('../../pluginManager.js'),
     common = require('../../../api/utils/common.js'),
+    countlyCommon = require('../../../api/lib/countly.common.js'),
     async = require('async'),
     Promise = require("bluebird");
 
@@ -17,7 +18,109 @@ const log = require('../../../api/utils/log.js')('drill:api');
         var validateUserForDataReadAPI = ob.validateUserForDataReadAPI;
         if (obParams.qstring.method === 'segmentation') {
             validateUserForDataReadAPI(obParams, function(params){
-                common.returnOutput(params, []);
+                let query = {};
+                let result;
+                let bucket = params.qstring.bucket;
+                if (params.qstring.period) {
+                    //check if period comes from datapicker
+                    if (params.qstring.period.indexOf(",") !== -1) {
+                        try {
+                            params.qstring.period = JSON.parse(params.qstring.period);
+                        }
+                        catch (SyntaxError) {
+                            common.returnMessage(params, 400, 'Bad request parameter: period');
+                            return true;
+                        }
+                    }
+                    else {
+                        switch (params.qstring.period) {
+                        case "month":
+                        case "day":
+                        case "yesterday":
+                        case "hour":
+                            break;
+                        default:
+                            if (!/([0-9]+)days/.test(params.qstring.period)) {
+                                common.returnMessage(params, 400, 'Bad request parameter: period');
+                                return true;
+                            }
+                            break;
+                        }
+                    }
+                }
+                else {
+                    common.returnMessage(params, 400, 'Missing request parameter: period');
+                    return true;
+                }
+
+                if (params.qstring.queryObject) {
+                    try {
+                        params.qstring.queryObject = JSON.parse(params.qstring.queryObject);
+                    }
+                    catch (SyntaxError) {
+                        common.returnMessage(params, 400, 'Bad request parameter: queryObject');
+                        return true;
+                    }
+                    let filter = params.qstring.queryObject;
+                    for (let k in filter) {
+                        query[k] = filter[k];
+                    }
+                }
+                countlyCommon.setPeriod(params.qstring.period, true);
+                let period = countlyCommon.periodObj;
+                let dateIds = getDateIds(bucket, period);
+                let collectionName = 'drill_events' + crypto.createHash('sha1').update(params.qstring.event + params.qstring.app_id).digest('hex');
+                let condition;
+                switch(bucket) {
+                    case "monthly":
+                        condition = common.dbEventMap.month;
+                        break;
+                    case "weekly":
+                        condition = common.dbEventMap.week;
+                        break;
+                    case "daily":
+                        condition = common.dbEventMap.day;
+                        break;
+                    case "hourly":
+                        condition = common.dbEventMap.hour;
+                        break;
+                    default:
+                        common.returnMessage(params, 400, 'Bad request parameter: bucket');
+                        return true;
+                }
+                
+                query[condition] = { $in: dateIds };
+                let pipeline = [];
+                pipeline.push({$match: query});
+                let group = {};
+                group['_id'] = "$" + condition;
+                group[common.dbEventMap.count] = { $sum: "$c" };
+                group[common.dbEventMap.sum] = { $sum: "$s" };
+                group[common.dbMap.dur] = { $sum: "$dur" };
+                group[common.dbMap.unique] = { $addToSet: "$uid" };
+                pipeline.push({$group: group});
+                pipeline.push({$sort: {_id: 1}})
+
+                common.drillDb.collection(collectionName).aggregate(pipeline, {allowDiskUse: true}, function(err, res) {
+                    if (!err && res && res.length > 0) {
+                        let result = {};
+                        let data = {};
+                        res.forEach(function(doc) {
+                            let item = {};
+                            item[common.dbMap.unique] = doc.u.length;
+                            item[common.dbMap.total] = doc.c;
+                            item[common.dbMap.sum] = doc.s;
+                            item[common.dbMap.dur] = doc.dur;
+                            data[doc._id] = item;
+                        });
+                        result["data"] = data;
+                        result['app_id'] = params.qstring.app_id;
+                        result['lu'] = new Date();
+                        common.returnOutput(params, result);
+                    } else {
+                        common.returnOutput(params, result || []);
+                    }
+                });
             });
             return true;
         } else if (obParams.qstring.method === 'segmentation_users') {
@@ -236,16 +339,16 @@ const log = require('../../../api/utils/log.js')('drill:api');
                 tmpEventObj[common.dbUserMap.user_id] = params.app_user_id;
             }
 
-            // If present use timestamp inside each event while recording
-            var time = params.time;
-            if (appEvents[i].timestamp) {
-                time = common.initTimeObj(params.appTimezone, appEvents[i].timestamp);
-                tmpEventObj[common.dbEventMap.timestamp] = appEvents[i].timestamp;
-                tmpEventObj[common.dbEventMap.day] = time.daily;
-                tmpEventObj[common.dbEventMap.week] = time.weekly;
-                tmpEventObj[common.dbEventMap.month] = time.monthly;
-                tmpEventObj[common.dbEventMap.hour] = time.hourly;
-            }
+            let time = params.time;
+            tmpEventObj[common.dbEventMap.timestamp] = time.mstimestamp;
+            // 2019.10.20
+            tmpEventObj[common.dbEventMap.day] = time.daily;
+            // 2019.w43
+            tmpEventObj[common.dbEventMap.week] = time.yearly + ".w" + time.weekly;
+            // 2019.m10
+            tmpEventObj[common.dbEventMap.month] = time.yearly + ".m" + time.month;
+            // 2014.10.20.h14
+            tmpEventObj[common.dbEventMap.hour] = time.daily + ".h" + time.hour;
 
             if (currEvent.sum && common.isNumber(currEvent.sum)) {
                 currEvent.sum = parseFloat(parseFloat(currEvent.sum).toFixed(5));
@@ -336,6 +439,65 @@ const log = require('../../../api/utils/log.js')('drill:api');
                 callback(false, result);
             });
         }
+    }
+
+    function getDateIds(bucket, period) {
+        let _periodObj = period,
+            dateIds = [];
+        let i = 0;
+        let now = new common.time.Date();   
+        let tmpDateIds = [];
+        switch (bucket) {
+        case "daily":
+            dateIds = _periodObj.currentPeriodArr;
+            // tmpDateIds.forEach(element => {
+            //     let day = element.replace(/\./g, ':');
+            //     dateIds.push(day);
+            // });
+            break;
+        case "hourly":
+            tmpDateIds = _periodObj.currentPeriodArr
+            for (i = 0; i < 25; i++) {
+                for(let j = 0; j < tmpDateIds.length; j++) {
+                    // let hour = tmpDateIds[j].replace(/\./g, ':');
+                    let hour = tmpDateIds[j];
+                    dateIds.push(hour + ".h" + i);
+                }
+            }
+            break;
+        case "monthly":
+            tmpDateIds = _periodObj.uniquePeriodCheckArr;
+            tmpDateIds.forEach(element => {
+                let month = element.split('.');
+                // month = month[0] + ":m" + month[1];
+                month = month[0] + ".m" + month[1];
+                dateIds.push(month);
+            });
+            break;
+        case "weekly":
+            if (now.getFullYear() === _periodObj.activePeriod) {
+                let week;
+                tmpDateIds = _periodObj.uniquePeriodArr;
+                tmpDateIds = tmpDateIds.reverse();
+                week = tmpDateIds.find(id => id.includes('.w'));
+                week = week.substring(week.indexOf('w') + 1);
+                week = parseInt(week, 10);
+                for (i = 1; i <= week + 1; i++) {
+                    let year = _periodObj.activePeriod;
+                    // dateIds.push(year + ":w" + i);
+                    dateIds.push(year + ".w" + i);
+                }
+            } else {
+                tmpDateIds = _periodObj.uniquePeriodArr;
+                dateIds = tmpDateIds.filter(id => id.includes('.w'));
+                // tmpDateIds = tmpDateIds.filter(id => id.includes('.w'));
+                // tmpDateIds.forEach(element => {
+                //     dateIds.push(element.replace(/\./g, ':'));
+                // });
+            }
+            break;
+        }
+        return dateIds;
     }
 
 }(plugin));
