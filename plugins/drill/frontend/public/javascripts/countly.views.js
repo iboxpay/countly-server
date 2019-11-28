@@ -815,7 +815,7 @@ window.DrillView = countlyView.extend({
                     "<tr>" +
                         "<td>  <div class='fa fa-play-circle bookmark-action apply' data-id='" + bookmarks[i]._id + "' data-query='" + (bookmarks[i].query_obj || "") + "' data-by-val='" + (bookmarks[i].by_val || "") + "'></div> </td>" +
                         "<td>" + (bookmarks[i].name || "") + "<div class='bookmark-desc'>"+(bookmarks[i].desc || "") +"</div></td>" +
-                        "<td>" + (bookmarks[i].global === false ? 'Private' : 'Global') + "</td>"  +
+                        "<td>" + (bookmarks[i].global === false ? '私有' : '公共') + "</td>"  +
                         "<td>" + (bookmarks[i].query_text || "-").replace(/]/g, "]<br>") + "</td>" +
                         "<td>" +
                             "<div class='bookmark-options'><div class='bookmark-name'>" + (bookmarks[i].by_val_text || "-") +

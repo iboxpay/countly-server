@@ -154,7 +154,15 @@ const log = require('../../../api/utils/log.js')('drill:api');
             return true;            
         } else if (obParams.qstring.method === 'drill_bookmarks') {
             validateUserForDataReadAPI(obParams, function(params){
-                common.returnOutput(params, []);
+                let event = params.qstring.event_key;
+                common.drillDb.collection('drill_bookmarks').find({event_key: event}).toArray(function(err, res){
+                    if (!err && res && res.length >= 1) {
+                        common.returnOutput(params, res || []);
+                    } else {
+                        log.d(err);
+                        common.returnOutput(params, []);
+                    }
+                });
             });
             return true;            
         }
@@ -176,11 +184,157 @@ const log = require('../../../api/utils/log.js')('drill:api');
 
      //write api call
      plugins.register("/i/drill/add_bookmark", function(ob) {
-        common.returnMessage(params, 200, 'Develop doing');
+         var obParams = ob.params;
+         var validateUserForWriteAPI = ob.validateUserForWriteAPI;
+ 
+         validateUserForWriteAPI(function(params) {
+             let bookmark = {};
+
+             bookmark.app_id = params.qstring.app_id;
+             try {
+                 bookmark.global = JSON.parse(params.qstring.global);
+             }
+             catch (err) {
+                 log.e('Parse global failed', params.qstring.global);
+                 common.returnMessage(params, 500, "Failed to parse global");
+                 return true;
+             }
+             if (params.qstring.name) {
+                 bookmark.name = params.qstring.name;
+             } 
+             else {
+                 common.returnMessage(params, 200, 'Not null name argument');
+                 return true;
+             }
+
+             if (params.qstring.desc) {
+                 bookmark.desc = params.qstring.desc;
+             }
+             else {
+                 common.returnMessage(params, 200, 'Not null description argument ');
+                 return true;
+             }
+
+             if (params.qstring.event_key) {
+                 bookmark.event_key = params.qstring.event_key;
+             }
+             else {
+                 common.returnMessage(params, 200, 'Not null event argument ');
+                 return true;
+             }
+
+             if (params.qstring.query_obj) {
+                 bookmark.query_obj = params.qstring.query_obj;
+             }
+             else {
+                 common.returnMessage(params, 200, 'Not null query_obj argument ');
+                 return true;
+             }
+
+             if (params.qstring.query_text) {
+                 bookmark.query_text = params.qstring.query_text;
+             }
+             else {
+                 common.returnMessage(params, 200, 'Not null query_text argument ');
+                 return true;
+             }
+
+             if (params.qstring.creator) {
+                 bookmark.creator = params.qstring.creator;
+             }
+             else {
+                 common.returnMessage(params, 200, 'Not null creator argument ');
+                 return true;
+             }
+            //  bookmark.event_app_id = common.db.ObjectID;
+
+             common.drillDb.collection('drill_bookmarks').insert(bookmark, function(err, result){
+                if (!err && result && result.insertedIds && result.insertedIds[0]) {
+                    let response = {};
+                    plugins.dispatch("/updateAlert", { method: "alertTrigger", alert: result.ops[0] });
+                    response.result = 'Success';
+                    common.returnOutput(params, response);
+                }
+                else {
+                    common.returnMessage(params, 500, "Failed to create an alert");
+                }
+             });
+         }, obParams)
+
+        return true
      });
 
      plugins.register("/i/drill/delete_bookmark", function(ob) {
-        common.returnMessage(params, 200, "Deleted an bookmark");
+        var obParams = ob.params;
+        var validateUserForWriteAPI = ob.validateUserForWriteAPI;
+        validateUserForWriteAPI(function(params) { 
+            let id = params.qstring.bookmark_id;
+            try {
+                common.drillDb.collection('drill_bookmarks').remove({"_id": common.db.ObjectID(id) }, function(err, result) {
+                    log.d(err, result, "delete an bookmark item");
+                    if (!err) {
+                        let response = {};
+                        response.result = 'Success';
+                        common.returnOutput(params, response);
+                    }
+                });
+            } catch (err) {
+                log.e('delete bookmark item failed', id);
+                common.returnMessage(params, 500, "Failed to delete an funnel");
+            }
+            return true;
+        }, obParams);
+        return true;
+    });
+
+    plugins.register("/i/drill/edit_bookmark", function(ob) {
+        var obParams = ob.params;
+        var validateUserForWriteAPI = ob.validateUserForWriteAPI;
+        validateUserForWriteAPI(function(params) {
+            let bookmark = {} 
+            let id = params.qstring.bookmark_id;
+            try {
+                bookmark.global = JSON.parse(params.qstring.global);
+            }
+            catch (err) {
+                log.e('Parse global failed', params.qstring.global);
+                common.returnMessage(params, 500, "Failed to parse global");
+                return true;
+            }
+            if (params.qstring.name) {
+                bookmark.name = params.qstring.name;
+            } 
+            else {
+                common.returnMessage(params, 200, 'Not null name argument');
+                return true;
+            }
+
+            if (params.qstring.desc) {
+                bookmark.desc = params.qstring.desc;
+            }
+            else {
+                common.returnMessage(params, 200, 'Not null description argument ');
+                return true;
+            }
+            return common.drillDb.collection("drill_bookmarks").findAndModify(
+                { _id: common.db.ObjectID(id) },
+                {},
+                {$set: bookmark},
+                function(err, result) {
+                    if (!err) {
+                        plugins.dispatch("/updateAlert", { method: "alertTrigger", alert: result.value });
+                        plugins.dispatch("/updateAlert", { method: "alertTrigger" });
+
+                        common.returnOutput(params, result && result.value);
+                        return true;
+                    }
+                    else {
+                        common.returnMessage(params, 500, "Failed to edit an funnel");
+                        return true;
+                    }
+                });
+        }, obParams);
+        return true;
     });
 
     plugins.register("/plugins/drill", function(ob) {
