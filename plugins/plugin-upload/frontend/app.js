@@ -474,7 +474,6 @@ plugin.init = function(app, countlyDb) {
             }
 
             var tmp_path = req.files.new_plugin_input.path;
-            var target_path = path.resolve(__dirname + '/upload/' + req.files.new_plugin_input.name);
             var plain_name_array = req.files.new_plugin_input.name.split(".");
 
             var ext = "";
@@ -501,6 +500,10 @@ plugin.init = function(app, countlyDb) {
                     ext = ext + "." + plain_name_array[2];
                 }
             }
+
+            var randomString = (+new Date()).toString() + (Math.random()).toString();
+            var pluginName = "plugin_" + common.sha1Hash(randomString) + '.' + ext;
+            var target_path = path.resolve(__dirname + '/upload/' + pluginName);
 
             var is = fs.createReadStream(tmp_path);
             var os = fs.createWriteStream(target_path);
