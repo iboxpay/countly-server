@@ -21,5 +21,5 @@ if [ $1 != "combined" ]; then
 fi
 
 #add indexes
-nodejs $DIR/scripts/add_indexes.js
+node $DIR/scripts/add_indexes.js
 

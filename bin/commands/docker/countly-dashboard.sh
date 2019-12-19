@@ -12,4 +12,4 @@ then
 	echo "[dashboard] MongoDB started"
 fi
 
-exec /sbin/setuser countly /usr/bin/nodejs /opt/countly/frontend/express/app.js
+exec /sbin/setuser countly /usr/bin/node /opt/countly/frontend/express/app.js

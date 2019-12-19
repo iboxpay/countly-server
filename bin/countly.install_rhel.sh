@@ -38,10 +38,10 @@ yum install -y nodejs
 
 yum install -y which
 set +e
-NODE_JS_CMD=$(which nodejs)
+NODE_JS_CMD=$(which node)
 set -e
 if [[ -z $NODE_JS_CMD ]]; then
-	ln -s `which node` /usr/bin/nodejs
+	ln -s `which node` /usr/bin/node
 fi
 
 #install nginx
@@ -61,9 +61,9 @@ if grep -q -i "release 6" /etc/redhat-release ; then
     bash $DIR/scripts/install-python27.sh
 else
     yum install -y python-pip
-    pip install pip --upgrade
+    pip install pip --upgrade -i https://mirrors.aliyun.com/pypi/simple/
     yum install -y python-meld3
-    pip install supervisor --ignore-installed meld3
+    pip install supervisor --ignore-installed meld3 -i https://mirrors.aliyun.com/pypi/simple/
 fi
 
 #install sendmail
@@ -123,6 +123,14 @@ set -e
 #create configuration files from samples
 if [ ! -f $DIR/../api/config.js ]; then
 	cp $DIR/../api/config.sample.js $DIR/../api/config.js
+fi
+
+if [ ! -f $DIR/../api/configs/config.db_out.js ]; then
+	cp $DIR/../api/configs/config.db_out.sample.js $DIR/../api/configs/config.db_out.js
+fi
+
+if [ ! -f $DIR/../api/configs/config.db_fs.js ]; then
+	cp $DIR/../api/configs/config.db_fs.sample.js $DIR/../api/configs/config.db_fs.js
 fi
 
 if [ ! -f $DIR/../frontend/express/config.js ]; then

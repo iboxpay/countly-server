@@ -58,7 +58,7 @@ fi
 
 #backup config and remove configuration to prevent duplicates
 cp /etc/mongod.conf /etc/mongod.conf.bak
-nodejs $DIR/configure_mongodb.js /etc/mongod.conf
+node $DIR/configure_mongodb.js /etc/mongod.conf
   
 if [ -f /etc/redhat-release ]; then
     #mongodb might need to be started

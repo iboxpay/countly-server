@@ -14,9 +14,9 @@ then
     echo "If you need to restore it, run:"
     echo "bash $DIR/upgrade/17.12/scripts/restore_drill_meta.sh"
     
-    nodejs $DIR/upgrade/17.12/scripts/process_drill_meta.js
+    node $DIR/upgrade/17.12/scripts/process_drill_meta.js
     set +e
     
     #echo "Deleting old drill meta data"
-    #nodejs $DIR/upgrade/17.12/scripts/delete_drill_meta.js
+    #node $DIR/upgrade/17.12/scripts/delete_drill_meta.js
 fi

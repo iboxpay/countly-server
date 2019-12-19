@@ -10,12 +10,12 @@ if [ $1 != "combined" ]; then
     countly plugin enable times-of-day
 fi
 
-nodejs $DIR/upgrade/18.01/scripts/removeUnusedData.js
+node $DIR/upgrade/18.01/scripts/removeUnusedData.js
     
 set -e
-nodejs $DIR/upgrade/18.01/scripts/process_users_meta.js
+node $DIR/upgrade/18.01/scripts/process_users_meta.js
 set +e
 
 
 #add indexes
-nodejs $DIR/scripts/add_indexes.js
+node $DIR/scripts/add_indexes.js

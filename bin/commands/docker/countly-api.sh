@@ -12,4 +12,4 @@ then
 	echo "[api] MongoDB started"
 fi
 
-exec /sbin/setuser countly /usr/bin/nodejs /opt/countly/api/api.js
+exec /sbin/setuser countly /usr/bin/node /opt/countly/api/api.js

@@ -115,7 +115,7 @@ countly_upgrade (){
         )
     elif [ $1 == "auto" ]
     then
-        UPGRADE=$(nodejs $DIR/../scripts/checking_versions.js);
+        UPGRADE=$(node $DIR/../scripts/checking_versions.js);
         if [ $? -eq 0 ]
         then
             run_upgrade $UPGRADE $2 $y;
@@ -128,10 +128,10 @@ countly_upgrade (){
         then
             if [ $2 == "fs" ] || [ $2 == "db" ]
             then
-                UPGRADE=$(nodejs $DIR/../scripts/checking_versions.js $3 $4);
+                UPGRADE=$(node $DIR/../scripts/checking_versions.js $3 $4);
             elif [ $# -ge 3 ]
             then
-                UPGRADE=$(nodejs $DIR/../scripts/checking_versions.js $2 $3);
+                UPGRADE=$(node $DIR/../scripts/checking_versions.js $2 $3);
             fi
             if [ $? -eq 0 ]
             then
@@ -149,10 +149,10 @@ countly_upgrade (){
     then
         if [ $# -eq 2 ] && [ $2 == "auto" ]
         then
-            echo $(nodejs $DIR/../scripts/checking_versions.js);
+            echo $(node $DIR/../scripts/checking_versions.js);
         elif [ $# -eq 3 ]
         then
-            echo $(nodejs $DIR/../scripts/checking_versions.js $2 $3);
+            echo $(node $DIR/../scripts/checking_versions.js $2 $3);
         else
             echo "Provide upgrade version in formats:";
             echo "    countly upgrade list auto";
