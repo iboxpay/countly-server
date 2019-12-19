@@ -30,7 +30,8 @@ var countlyConfig = {
         /*
         dbOptions:{
             //db options
-            native_parser: true
+            native_parser: true,
+            authSource: "countly"
         },
         serverOptions:{
             //server options

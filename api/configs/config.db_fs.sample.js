@@ -1,7 +1,7 @@
 var countlyConfig = {
     mongodb: {
         host: "localhost",
-        db: "countly_drill",
+        db: "countly_fs",
         port: 27017,
         max_pool_size: 500,
         //username: test,
@@ -10,7 +10,7 @@ var countlyConfig = {
         dbOptions:{
             //db options
             native_parser: true,
-            authSource: "countly_drill"
+            authSource: "countly_fs"
         },
         serverOptions:{
             //server options
