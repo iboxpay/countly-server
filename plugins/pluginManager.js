@@ -44,7 +44,7 @@ var pluginManager = function pluginManager() {
     /**
      *  Events prefixed with [CLY]_ that should be recorded in drill
      */
-    this.internalDrillEvents = ["[CLY]_session"];
+    this.internalDrillEvents = ["[CLY]_session", "[CLY]_view"];
     /**
      *  Segments for events prefixed with [CLY]_ that should be omitted
      */
@@ -54,7 +54,8 @@ var pluginManager = function pluginManager() {
      */
     this.dbConfigFiles = {
         countly_drill: "./drill/config.js",
-        countly_out: "../api/configs/config.db_out.js"
+        countly_out: "../api/configs/config.db_out.js",
+        countly_fs: "../api/configs/config.db_fs.js"
     };
 
     /**
@@ -764,7 +765,7 @@ var pluginManager = function pluginManager() {
         callback = callback || function() {};
         var scriptPath = path.join(__dirname, plugin, 'install.js');
         var errors = false;
-        var process = exec("nodejs " + scriptPath, {maxBuffer: 1024 * 20000}, function(error) {
+        var process = exec("node " + scriptPath, {maxBuffer: 1024 * 20000}, function(error) {
             console.log('Done running install.js with %j', error);
             if (error) {
                 errors = true;
@@ -806,7 +807,7 @@ var pluginManager = function pluginManager() {
         callback = callback || function() {};
         var scriptPath = path.join(__dirname, plugin, 'install.js');
         var errors = false;
-        var process = exec("nodejs " + scriptPath, {maxBuffer: 1024 * 20000}, function(error) {
+        var process = exec("node " + scriptPath, {maxBuffer: 1024 * 20000}, function(error) {
             console.log('Done running install.js with %j', error);
             if (error) {
                 errors = true;
@@ -848,7 +849,7 @@ var pluginManager = function pluginManager() {
         callback = callback || function() {};
         var scriptPath = path.join(__dirname, plugin, 'uninstall.js');
         var errors = false;
-        var process = exec("nodejs " + scriptPath, {maxBuffer: 1024 * 20000}, function(error) {
+        var process = exec("node " + scriptPath, {maxBuffer: 1024 * 20000}, function(error) {
             console.log('Done running uninstall.js with %j', error);
             if (error) {
                 errors = true;

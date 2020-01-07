@@ -2704,6 +2704,11 @@ function extendViewWithFilter(view){
                         $(this).find(".filter-value.static-list .text").data("value"),
                     tmpDataType = $(this).find(".filter-name .text").data("type");
 
+                if (tmpValText && tmpValText === 'false' && !tmpVal) {
+                    // 解决bool值为String时false不能钻取查询
+                    tmpVal = tmpValText;
+                }
+
                 if(typeof tmpVal == "boolean")
                     tmpVal = tmpVal+"";
                 if (tmpConnector != "BY") {

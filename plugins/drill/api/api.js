@@ -18,7 +18,8 @@ const log = require('../../../api/utils/log.js')('drill:api');
         var validateUserForDataReadAPI = ob.validateUserForDataReadAPI;
         if (obParams.qstring.method === 'segmentation') {
             validateUserForDataReadAPI(obParams, function(params){
-                let query = {};
+                let ands = [];
+                // let tmp = {};
                 let result;
                 let bucket = params.qstring.bucket;
                 if (params.qstring.period) {
@@ -63,7 +64,9 @@ const log = require('../../../api/utils/log.js')('drill:api');
                     }
                     let filter = params.qstring.queryObject;
                     for (let k in filter) {
-                        query[k] = filter[k];
+                        let tmp = {};
+                        tmp[k] = filter[k];
+                        ands.push(tmp);
                     }
                 }
                 countlyCommon.setPeriod(params.qstring.period, true);
@@ -89,9 +92,13 @@ const log = require('../../../api/utils/log.js')('drill:api');
                         return true;
                 }
                 
-                query[condition] = { $in: dateIds };
+                let timeObj = {};
+                timeObj[condition] = { $in: dateIds }
+                ands.push(timeObj);
                 let pipeline = [];
-                pipeline.push({$match: query});
+                // let phoneTmp = {'sg.phone_num': {$in: ['18927430742']}}
+                // pipeline.push({$match: {$and: [timeObj, phoneTmp]}});
+                pipeline.push({$match: {$and: ands}});
                 let group = {};
                 group['_id'] = "$" + condition;
                 group[common.dbEventMap.count] = { $sum: "$c" };
@@ -342,6 +349,8 @@ const log = require('../../../api/utils/log.js')('drill:api');
         log.d("plugins/drill: " + params.app_id);
     });
 
+    this.drillOmitSegments = ['phone_num'];
+
     /**
     * Process segments from params
     * @param {params} params - params object
@@ -350,7 +359,7 @@ const log = require('../../../api/utils/log.js')('drill:api');
     **/
     function processMeta(params, appEvents, appUser, done) {
         var forbiddenSegValues = [];
-        for (let i = 1; i < 32; i++) {
+        for (let i = 0; i < 32; i++) {
             forbiddenSegValues.push(i + "");
         }
         let metaToFetch = {};
@@ -361,8 +370,8 @@ const log = require('../../../api/utils/log.js')('drill:api');
                 metaCollectionName = "";
 
             if (!currEvent.key || !currEvent.count || !common.isNumber(currEvent.count) ||
-                (currEvent.key.indexOf('[CLY]_') === 0)) {
-                log.d("process meta: " + currEvent.key);
+                (currEvent.key.indexOf('[CLY]_') === 0 && plugins.internalDrillEvents.indexOf(currEvent.key) === -1)) {
+                log.d("ignore meta: " + currEvent.key);
                 continue;
             }
 
@@ -375,6 +384,14 @@ const log = require('../../../api/utils/log.js')('drill:api');
             if (currEvent.segmentation) {
                 let j = 0;
                 for (var segKey in currEvent.segmentation) {
+                    /**
+                     * type决定在钻取查询的时候值输入框的显示类型
+                     * l: 代表List
+                     * d: 代表日期
+                     * n: 代表数字
+                     * s: 代表字符串
+                     */
+                    let type = 'l';
                     //check if segment should be ommited
                     if (plugins.internalOmitSegments[currEvent.key] && Array.isArray(plugins.internalOmitSegments[currEvent.key]) && 
                             plugins.internalOmitSegments[currEvent.key].indexOf(segKey) !== -1) {
@@ -394,11 +411,17 @@ const log = require('../../../api/utils/log.js')('drill:api');
                         tmpSegval = "[CLY]" + tmpSegVal;
                     }
 
+                    if (drillOmitSegments.indexOf(segKey) !== -1) {
+                        log.d("meta properties parse to null: " + segKey);
+                        tmpSegval = "";
+                        type = 's';
+                    }
+
                     metaToFetch[j] = {
                         eventName: shortEventName,
                         key: segKey,
                         value: tmpSegval,
-                        type: 'l'
+                        type: type
                     };
                     j++;
                 }
@@ -463,7 +486,12 @@ const log = require('../../../api/utils/log.js')('drill:api');
         var tmpEventObj = {},
             tmpEventColl = [],
             shortEventName = {},
+            forbiddenSegValues = [],
             eventCollectionName = {};
+
+        for (let i = 0; i < 32; i++) {
+            forbiddenSegValues.push(i + "");
+        }
 
         for (let i = 0; i < appEvents.length; i++) {
             var currEvent = appEvents[i];
@@ -472,7 +500,7 @@ const log = require('../../../api/utils/log.js')('drill:api');
             // Key and count fields are required
             if (!currEvent.key || !currEvent.count || !common.isNumber(currEvent.count) || 
                     (currEvent.key.indexOf('[CLY]_') === 0 && plugins.internalDrillEvents.indexOf(currEvent.key) === -1)) {
-                log.d("process events: " + currEvent.key);
+                log.d("ignore events: " + currEvent.key);
                 continue;
             }
 
@@ -517,6 +545,32 @@ const log = require('../../../api/utils/log.js')('drill:api');
             tmpEventObj[common.dbEventMap.count] = currEvent.count;
 
             if (currEvent.segmentation) {
+                tmpEventObj[common.dbEventMap.segmentations] = currEvent.segmentation;
+            }
+            if (currEvent.segmentation) {
+                for (var segKey in currEvent.segmentation) {
+                    //check if segment should be ommited
+                    if (plugins.internalOmitSegments[currEvent.key] && Array.isArray(plugins.internalOmitSegments[currEvent.key]) && 
+                            plugins.internalOmitSegments[currEvent.key].indexOf(segKey) !== -1) {
+                        continue;
+                    }
+
+                    let tmpSegval = currEvent.segmentation[segKey] + "";
+
+                    if (tmpSegval === "") {
+                        continue;
+                    }
+
+                    // Mongodb field names can't start with $ or contain .
+                    tmpSegVal = tmpSegval.replace(/^\$/, "").replace(/\./g, ":");
+
+                    if (forbiddenSegValues.indexOf(tmpSegval) !== -1) {
+                        tmpSegval = "[CLY]" + tmpSegVal;
+                    }
+
+                    currEvent.segmentation[segKey] = tmpSegval;
+                }
+
                 tmpEventObj[common.dbEventMap.segmentations] = currEvent.segmentation;
             }
 

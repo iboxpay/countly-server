@@ -19,7 +19,7 @@ var countlyEvents = {},
 countlyEvents.processEvents = function(params) {
     return new Promise(function(resolve) {
         var forbiddenSegValues = [];
-        for (let i = 1; i < 32; i++) {
+        for (let i = 0; i < 32; i++) {
             forbiddenSegValues.push(i + "");
         }
         common.db.collection("events").findOne({'_id': params.app_id}, {
@@ -177,7 +177,7 @@ function processEvents(appEvents, appSegments, appSgValues, params, omitted_segm
         eventHashMap = {},
         forbiddenSegValues = [];
 
-    for (let i = 1; i < 32; i++) {
+    for (let i = 0; i < 32; i++) {
         forbiddenSegValues.push(i + "");
     }
 
