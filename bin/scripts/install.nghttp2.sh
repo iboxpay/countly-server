@@ -47,8 +47,11 @@ if [ -d "$DIR/nghttp2" ]; then
     rm -rf "$DIR/nghttp2"
 fi
 
-git clone https://github.com/nghttp2/nghttp2.git "$DIR/nghttp2"
-cd "$DIR/nghttp2"
+# default use remote repository
+git clone https://github.com/nghttp2/nghttp2.git $DIR/nghttp2
+cd $DIR/nghttp2
 git checkout tags/v1.30.0
+# can use manual donwload special version if git don't clone
+# cd /opt/countly/nghttp2
 export CFLAGS="-g -O2 -fPIC" && export CPPFLAGS="-fPIC" && autoreconf -i && automake && autoconf && ./configure --disable-examples --disable-app && make && make install
 npm install -g --unsafe-perm node-gyp

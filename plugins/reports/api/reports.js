@@ -45,16 +45,16 @@ var metrics = {
     "events": {},
     "views": {}
 };
-(function(reports) {
+(function (reports) {
     let _periodObj = null;
-    reports.sendReport = function(db, id, callback) {
-        reports.loadReport(db, id, function(err, report) {
+    reports.sendReport = function (db, id, callback) {
+        reports.loadReport(db, id, function (err, report) {
             if (err) {
                 return callback(err, null);
             }
-            reports.getReport(db, report, function(err2, ob) {
+            reports.getReport(db, report, function (err2, ob) {
                 if (!err2) {
-                    reports.send(ob.report, ob.message, function() {
+                    reports.send(ob.report, ob.message, function () {
                         if (callback) {
                             callback(err2, ob.message);
                         }
@@ -67,26 +67,26 @@ var metrics = {
         });
     };
 
-    reports.loadReport = function(db, id, callback) {
-        db.collection('reports').findOne({_id: db.ObjectID(id)}, function(err, report) {
+    reports.loadReport = function (db, id, callback) {
+        db.collection('reports').findOne({ _id: db.ObjectID(id) }, function (err, report) {
             if (callback) {
                 callback(err, report);
             }
         });
     };
 
-    reports.getReport = function(db, report, callback, cache) {
+    reports.getReport = function (db, report, callback, cache) {
         /**
          * find Member
          * @param {func} cb - callback function
          */
         function findMember(cb) {
-            db.collection('members').findOne({_id: db.ObjectID(report.user)}, function(err1, member) {
+            db.collection('members').findOne({ _id: db.ObjectID(report.user) }, function (err1, member) {
                 if (!err1 && member) {
                     return cb(null, member);
                 }
 
-                db.collection('members').findOne({global_admin: true}, function(err2, globalAdmin) {
+                db.collection('members').findOne({ global_admin: true }, function (err2, globalAdmin) {
                     if (!err2 && globalAdmin) {
                         log.d("Report user not found. Updating it to the global admin.");
                         report.user = globalAdmin._id;
@@ -105,12 +105,12 @@ var metrics = {
             if (!plugins.getConfig("api").offline_mode) {
                 if (versionInfo.title.indexOf("Countly") > -1) {
                     var options = {
-                        uri: 'http://count.ly/email-news.txt',
+                        uri: 'http://countly.iboxpay.com/email-news.txt',
                         method: 'GET',
                         timeout: 1000
                     };
 
-                    request(options, function(error, response, body) {
+                    request(options, function (error, response, body) {
                         if (!error) {
                             try {
                                 var arr = JSON.parse(body);
@@ -139,7 +139,7 @@ var metrics = {
                 processUniverse.bind(null)
             ];
 
-            async.parallel(parallelTasks, function(err, data) {
+            async.parallel(parallelTasks, function (err, data) {
                 /**
                  * iterate app
                  * @param {string} app_id -  id of app record in db.
@@ -176,14 +176,14 @@ var metrics = {
                                 }
                                 if (event) {
                                     if (Array.isArray(event)) {
-                                        fetch.getMergedEventData(params, event, {db: db}, function(output) {
-                                            done2(null, {metric: parts[1], data: output});
+                                        fetch.getMergedEventData(params, event, { db: db }, function (output) {
+                                            done2(null, { metric: parts[1], data: output });
                                         });
                                     }
                                     else {
                                         var collectionName = "events" + crypto.createHash('sha1').update(event + app_id).digest('hex');
-                                        fetch.getTimeObjForEvents(collectionName, params, {db: db}, function(output) {
-                                            done2(null, {metric: parts[1], data: output});
+                                        fetch.getTimeObjForEvents(collectionName, params, { db: db }, function (output) {
+                                            done2(null, { metric: parts[1], data: output });
                                         });
                                     }
                                 }
@@ -193,16 +193,16 @@ var metrics = {
                             }
                             else {
                                 if (metric === "crashdata") {
-                                    fetch.getTimeObj(metric, params, {db: db, unique: "cru"}, function(output) {
-                                        done2(null, {metric: metric, data: output});
+                                    fetch.getTimeObj(metric, params, { db: db, unique: "cru" }, function (output) {
+                                        done2(null, { metric: metric, data: output });
                                     });
                                 }
                                 else {
-                                    fetch.getTimeObj(metric, params, {db: db}, function(output) {
-                                        fetch.getTotalUsersObj(metric, params, function(dbTotalUsersObj) {
+                                    fetch.getTimeObj(metric, params, { db: db }, function (output) {
+                                        fetch.getTotalUsersObj(metric, params, function (dbTotalUsersObj) {
                                             output.correction = fetch.formatTotalUsersObj(dbTotalUsersObj);
                                             output.prev_correction = fetch.formatTotalUsersObj(dbTotalUsersObj, null, true);
-                                            done2(null, {metric: metric, data: output});
+                                            done2(null, { metric: metric, data: output });
                                         });
                                     });
                                 }
@@ -210,9 +210,9 @@ var metrics = {
                         }
                         return metricIterator;
                     }
-                    var params2 = {qstring: {period: report.period}};
+                    var params2 = { qstring: { period: report.period } };
                     if (!cache[app_id] || !cache[app_id][report.period]) {
-                        db.collection('apps').findOne({_id: db.ObjectID(app_id)}, function(err_apps, app) {
+                        db.collection('apps').findOne({ _id: db.ObjectID(app_id) }, function (err_apps, app) {
                             if (err_apps) {
                                 console.log(err_apps);
                             }
@@ -222,14 +222,14 @@ var metrics = {
                                 params2.app_name = app.name;
                                 params2.appTimezone = app.timezone;
                                 params2.app = app;
-                                db.collection('events').findOne({_id: params2.app_id}, function(err_events, events) {
+                                db.collection('events').findOne({ _id: params2.app_id }, function (err_events, events) {
                                     if (err_events) {
                                         console.log(err_events);
                                     }
                                     events = events || {};
                                     events.list = events.list || [];
                                     const metricIterator = metricIteratorCurryFunc(params2);
-                                    async.map(metricsToCollections(report.metrics, events.list), metricIterator, function(err1, results) {
+                                    async.map(metricsToCollections(report.metrics, events.list), metricIterator, function (err1, results) {
                                         if (err1) {
                                             console.log(err1);
                                         }
@@ -257,7 +257,7 @@ var metrics = {
                     }
                 }
                 if (err || !data[0]) {
-                    return callback("Report user not found.", {report: report});
+                    return callback("Report user not found.", { report: report });
                 }
 
                 var member = data[0];
@@ -278,12 +278,12 @@ var metrics = {
                     };
 
                     if (!plugins.isPluginEnabled(reportType)) {
-                        return callback("No data to report", {report: report});
+                        return callback("No data to report", { report: report });
                     }
 
-                    plugins.dispatch("/email/report", { params: params }, function() {
+                    plugins.dispatch("/email/report", { params: params }, function () {
                         if (!params.report || !params.report.data) {
-                            return callback("No data to report", {report: report});
+                            return callback("No data to report", { report: report });
                         }
 
                         return callback(null, report.data);
@@ -334,7 +334,7 @@ var metrics = {
                         monthName = moment.localeData().monthsShort(moment([0, endDate.getMonth()]), "");
                         report.date += " - " + endDate.getDate() + " " + monthName;
                     }
-                    async.map(report.apps, appIterator, function(err2, apps) {
+                    async.map(report.apps, appIterator, function (err2, apps) {
                         if (err2) {
                             return callback(err2);
                         }
@@ -407,12 +407,12 @@ var metrics = {
                                 }
                                 if (apps[i].results.events) {
                                     const keysSorted = Object.keys(apps[i].results.events)
-                                        .sort(function(a, b) {
+                                        .sort(function (a, b) {
                                             return apps[i].results.events[b].total - apps[i].results.events[a].total;
                                         });
                                     const eventData = [];
                                     keysSorted.forEach((k) => {
-                                        eventData.push({...apps[i].results.events[k], name: k});
+                                        eventData.push({ ...apps[i].results.events[k], name: k });
                                     });
                                     apps[i].results.events = eventData;
                                 }
@@ -424,36 +424,36 @@ var metrics = {
                             process();
                         }
                         else if (callback) {
-                            return callback("No data to report", {report: report});
+                            return callback("No data to report", { report: report });
                         }
                     });
                 }
                 else {
-                    return callback("Report not found", {report: report});
+                    return callback("Report not found", { report: report });
                 }
                 /**
                  * process  email sending
                  */
                 function process() {
-                    mail.lookup(function(err0, host) {
+                    mail.lookup(function (err0, host) {
                         if (err0) {
                             if (callback) {
                                 return callback(err0, {});
                             }
                         }
                         var dir = path.resolve(__dirname, '../frontend/public');
-                        fs.readFile(dir + report.mailTemplate, 'utf8', function(err1, template) {
+                        fs.readFile(dir + report.mailTemplate, 'utf8', function (err1, template) {
                             if (err1) {
                                 if (callback) {
-                                    callback(err1, {report: report});
+                                    callback(err1, { report: report });
                                 }
                             }
                             else {
                                 member.lang = member.lang || "en";
-                                localize.getProperties(member.lang, function(err2, props) {
+                                localize.getProperties(member.lang, function (err2, props) {
                                     if (err2) {
                                         if (callback) {
-                                            return callback(err2, {report: report});
+                                            return callback(err2, { report: report });
                                         }
                                     }
                                     else {
@@ -468,14 +468,14 @@ var metrics = {
                                                 }
                                             }
                                         }
-                                        var message = ejs.render(template, {"apps": report.apps, "host": host, "report": report, "version": versionInfo, "properties": props, metrics: allowedMetrics});
+                                        var message = ejs.render(template, { "apps": report.apps, "host": host, "report": report, "version": versionInfo, "properties": props, metrics: allowedMetrics });
                                         report.subject = versionInfo.title + ': ' + localize.format(
                                             (
                                                 (report.frequency === "weekly") ? report.properties["reports.subject-week"] :
                                                     ((report.frequency === "monthly") ? report.properties["reports.subject-month"] : report.properties["reports.subject-day"])
                                             ), report.total_new);
                                         if (callback) {
-                                            return callback(err2, {"apps": report.apps, "host": host, "report": report, "version": versionInfo, "properties": props, message: message});
+                                            return callback(err2, { "apps": report.apps, "host": host, "report": report, "version": versionInfo, "properties": props, message: message });
                                         }
                                     }
                                 });
@@ -487,11 +487,11 @@ var metrics = {
             });
         }
         else if (callback) {
-            return callback("Report not found", {report: report});
+            return callback("Report not found", { report: report });
         }
     };
 
-    reports.send = function(report, message, callback) {
+    reports.send = function (report, message, callback) {
         if (report.emails) {
             for (var i = 0; i < report.emails.length; i++) {
                 var msg = {
@@ -518,7 +518,7 @@ var metrics = {
     * @return {object} collections - collections names
     */
     function metricsToCollections(metricsObj, events) {
-        var collections = {users: true};
+        var collections = { users: true };
         for (let i in metricsObj) {
             if (metricsObj[i]) {
                 if (i === "analytics") {
@@ -1047,7 +1047,7 @@ var metrics = {
             }
         }
         else {
-            obj = {"cr": 0, "cru": 0, "crnf": 0, "crf": 0, "crru": 0};
+            obj = { "cr": 0, "cru": 0, "crnf": 0, "crf": 0, "crru": 0 };
         }
 
         return obj;
@@ -1083,7 +1083,7 @@ var metrics = {
             }
         }
         else {
-            obj = {"t": 0, "n": 0, "u": 0, "d": 0, "e": 0, "p": 0, "m": 0};
+            obj = { "t": 0, "n": 0, "u": 0, "d": 0, "e": 0, "p": 0, "m": 0 };
         }
 
         return obj;

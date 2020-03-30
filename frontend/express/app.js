@@ -5,7 +5,7 @@ var versionInfo = require('./version.info'),
     COUNTLY_VERSION = versionInfo.version,
     COUNTLY_COMPANY = versionInfo.company || '',
     COUNTLY_TYPE = versionInfo.type,
-    COUNTLY_PAGE = versionInfo.page = (!versionInfo.title) ? "http://count.ly" : null,
+    COUNTLY_PAGE = versionInfo.page = (!versionInfo.title) ? "http://countly.iboxpay.com" : null,
     COUNTLY_NAME = versionInfo.title = versionInfo.title || "Countly",
     COUNTLY_DOCUMENTATION_LINK = (typeof versionInfo.documentationLink === "undefined") ? true : (typeof versionInfo.documentationLink === "string") ? versionInfo.documentationLink : (typeof versionInfo.documentationLink === "boolean") ? versionInfo.documentationLink : true,
     COUNTLY_FEEDBACK_LINK = (typeof versionInfo.feedbackLink === "undefined") ? true : (typeof versionInfo.feedbackLink === "string") ? versionInfo.feedbackLink : (typeof versionInfo.feedbackLink === "boolean") ? versionInfo.feedbackLink : true,
@@ -50,7 +50,7 @@ var versionInfo = require('./version.info'),
     argon2 = require('argon2'),
     countlyCommon = require('../../api/lib/countly.common.js');
 
-var COUNTLY_NAMED_TYPE = "Countly Community Edition v" + COUNTLY_VERSION;
+var COUNTLY_NAMED_TYPE = "Countly Edition v" + COUNTLY_VERSION;
 var COUNTLY_TYPE_CE = true;
 var COUNTLY_TRIAL = (versionInfo.trial) ? true : false;
 var COUNTLY_TRACK_TYPE = "OSS";

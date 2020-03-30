@@ -16,7 +16,7 @@ countly_upgrade_post (){
     countly update sdk-web
     
     #add indexes
-    nodejs "$DIR/scripts/add_indexes.js"
+    node $DIR/scripts/add_indexes.js
     
     #install dependencies, process files and restart countly
     countly upgrade

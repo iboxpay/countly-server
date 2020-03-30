@@ -31,11 +31,11 @@ if [ "$1" = "list" ]; then
     done
 elif [ -d "$DIR/../../../plugins/$2" ]; then
     if [ "$1" = "enable" ]; then
-        nodejs "$DIR/plugin.js" enable "$2" ;
+        node $DIR/plugin.js enable $2 ;
     elif [ "$1" = "disable" ]; then
-        nodejs "$DIR/plugin.js" disable "$2" ;
+        node $DIR/plugin.js disable $2 ;
     elif [ "$1" = "upgrade" ]; then
-        nodejs "$DIR/plugin.js" upgrade "$2" ;
+        node $DIR/plugin.js upgrade $2 ;
     elif [ "$1" = "status" ]; then
         if grep -Fq "\"$2\"" "$DIR/../../../plugins/plugins.json"
         then
@@ -48,7 +48,7 @@ elif [ -d "$DIR/../../../plugins/$2" ]; then
     elif [ "$1" = "test" ]; then
         countly plugin lint "$2";
         shift;
-        nodejs "$DIR/plugin.js" test "$@" ;
+        node $DIR/plugin.js test "$@" ;
     elif [ "$1" = "lint" ]; then
         "$DIR/../../../node_modules/eslint/bin/eslint.js" -c "$DIR/../../../.eslintrc.json" "$DIR/../../../plugins/$2/." ;
     elif [ "$1" = "lintfix" ]; then

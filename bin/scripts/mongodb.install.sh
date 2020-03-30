@@ -26,22 +26,25 @@ gpgkey=https://www.mongodb.org/static/pgp/server-3.6.asc" > /etc/yum.repos.d/mon
     #disable transparent-hugepages (requires reboot)
     cp -f "$DIR/disable-transparent-hugepages" /etc/init.d/disable-transparent-hugepages
     chmod 755 /etc/init.d/disable-transparent-hugepages
+    # TODO: centos not exist chkconfig.
     chkconfig --add disable-transparent-hugepages
 fi
 
 if [ -f /etc/lsb-release ]; then
-    #install latest mongodb
-	sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 2930ADAE8CAF5059EE73BB4B58712A2291FA4AD5
+    #install latest mongodb 
     UBUNTU_YEAR="$(lsb_release -sr | cut -d '.' -f 1)";
 
     if [ "$UBUNTU_YEAR" == "14" ]
     then
+        sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 2930ADAE8CAF5059EE73BB4B58712A2291FA4AD5
 		echo "deb [ arch=amd64 ] http://repo.mongodb.org/apt/ubuntu trusty/mongodb-org/3.6 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-3.6.list ;
     elif [ "$UBUNTU_YEAR" == "16" ]
     then
+        sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 2930ADAE8CAF5059EE73BB4B58712A2291FA4AD5
         echo "deb [ arch=amd64,arm64 ] http://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/3.6 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-3.6.list ;
     else
-        echo "deb [ arch=amd64,arm64 ] http://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/3.6 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-3.6.list ;
+        sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 9DA31620334BD75D9DCB49F368818C72E52529D4
+        echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/4.0 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-4.0.list ;
     fi
     apt-get update
     #install mongodb
@@ -57,14 +60,16 @@ bash "$DIR/mongodb.init.logrotate.sh"
 
 #backup config and remove configuration to prevent duplicates
 cp /etc/mongod.conf /etc/mongod.conf.bak
-nodejs "$DIR/configure_mongodb.js" /etc/mongod.conf
-
+node $DIR/configure_mongodb.js /etc/mongod.conf
+  
 if [ -f /etc/redhat-release ]; then
     #mongodb might need to be started
     if grep -q -i "release 6" /etc/redhat-release ; then
         service mongod restart || echo "mongodb service does not exist"
     else
-        systemctl restart mongod || echo "mongodb systemctl job does not exist"
+        yum install -y systemd
+        #systemctl restart mongod || echo "mongodb systemctl job does not exist"
+        systemctl enable mongod || echo "mongodb systemctl job does not exist"
     fi
 fi
 
@@ -72,6 +77,7 @@ if [ -f /etc/lsb-release ]; then
     if [[ "$(/sbin/init --version)" =~ upstart ]]; then
         restart mongod || echo "mongodb upstart job does not exist"
     else
+        apt-get install -y systemd
         systemctl restart mongod || echo "mongodb systemctl job does not exist"
     fi
 fi

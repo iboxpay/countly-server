@@ -200,7 +200,16 @@ function trim_ending_slashes(address) {
                     foldername = params.qstring.exportid;
                 }
                 else {
-                    foldername = foldername[0];
+                    // foldername = foldername[0];
+                    var randomString = (+new Date()).toString() + (Math.random()).toString();
+                    var dmName = "dm_" + common.sha1Hash(randomString);
+                    var suffix = "";
+                    delete foldername[0]
+                    foldername.forEach(element => {
+                        suffix = suffix + "." + element
+                    });
+                    params.files.import_file.name = dmName + suffix
+                    foldername = dmName;
                 }
 
                 if (fs.existsSync(__dirname + "/../import/" + foldername + ".tar.gz") || fs.existsSync(__dirname + "/../import/" + foldername)) {

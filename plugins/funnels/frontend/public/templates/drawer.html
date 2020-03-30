@@ -1,0 +1,33 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"></head><body><div id="funnel-drawer" class="cly-drawer" v-bind:class="{&#39;open&#39; : isOpen}">
+    <div class="title">
+        <span id="drawer-title" v-text="title"></span>
+        <div class="close" v-on:click="hide">
+            <i class="ion-ios-close-empty"></i>
+        </div>
+    </div>
+
+    <div class="details">
+        <div class="section">
+            <div class="label" data-localize="funnels.funnel-name"></div>
+            <div>
+                <input type="text" class="input" v-model="funnelName">
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="label" data-localize="funnels.funnel-description"></div>
+            <div>
+                <input type="text" class="input" v-model="funnelDescription">
+            </div>
+            <span class="description" data-localize="funnels.funnel-description-note"></span>
+        </div>
+
+        <div class="section">
+            <drill-query-builder ref="drillQuery" builder-type="funnels" v-bind:event-list="events" header-text-key="funnels.funnel-steps" step-name-key="funnels.step-name"></drill-query-builder>
+        </div>
+    </div>
+
+    <div class="buttons">
+        <div class="icon-button green" v-bind:class="{&#39;disabled&#39; : isBtnDisabled}" v-on:click="saveFunnel" v-text="saveButton"></div>
+    </div>
+</div></body></html>

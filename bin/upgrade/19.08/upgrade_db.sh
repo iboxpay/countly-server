@@ -24,11 +24,10 @@ if [ "$1" != "combined" ]; then
 fi
 
 #run upgrade scripts
-nodejs "$CUR/scripts/live_concurrent.js"
-nodejs "$CUR/scripts/notes_upgrade.js"
-nodejs "$CUR/scripts/update_crashes.js"
-nodejs "$CUR/scripts/migrate_totp.js"
-nodejs "$CUR/scripts/push.js"
+node $CUR/scripts/live_concurrent.js
+node $CUR/scripts/notes_upgrade.js
+node $CUR/scripts/update_crashes.js
+node $CUR/scripts/migrate_totp.js
 
 #add indexes
-nodejs "$DIR/scripts/add_indexes.js"
+node $DIR/scripts/add_indexes.js

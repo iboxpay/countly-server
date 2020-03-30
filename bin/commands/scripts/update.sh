@@ -10,8 +10,8 @@ usage (){
     echo "    countly update sdk-web        # get latest version of web sdk";
 } 
 if [ "$1" = "translations" ]; then
-    nodejs "$DIR/update_translations.js" ;
-    (cd "$DIR/../../../" ; countly task locales ;)
+    node $DIR/update_translations.js ;
+    (cd $DIR/../../../ ; grunt locales ;)
 elif [ "$1" = "geoip" ]; then
     (cd "$DIR/../../../node_modules/geoip-lite" ; npm run-script updatedb ;)
 elif [ "$1" = "devices" ]; then

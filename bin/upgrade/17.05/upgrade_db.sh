@@ -3,7 +3,7 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../.." && pwd )"
 
 #add indexes
-nodejs "$DIR/upgrade/17.05/removeOld.js"
+node $DIR/upgrade/17.05/removeOld.js
 
 if [ "$1" != "combined" ]; then
     #upgrade all plugins
@@ -16,4 +16,4 @@ if [ "$1" != "combined" ]; then
 fi
 
 #add indexes
-nodejs "$DIR/scripts/add_indexes.js"
+node $DIR/scripts/add_indexes.js

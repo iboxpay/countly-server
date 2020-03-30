@@ -8,7 +8,7 @@ usage (){
 }
 if [ -z "$1" ]
 then
-    nodejs "$DIR/db.conf.js" ;
+    node $DIR/db.conf.js ;
 else
-    nodejs "$DIR/db.conf.js" "$1" ;
+    node $DIR/db.conf.js $1 ;
 fi

@@ -42,7 +42,7 @@ countly plugin enable slipping-away-users
 countly plugin enable star-rating
 
 #add indexes
-nodejs "$DIR/scripts/add_indexes.js"
+node $DIR/scripts/add_indexes.js
 
 #install dependencies, process files and restart countly
 countly upgrade

@@ -9,7 +9,7 @@ read -p"Have you backup drill collections before start process source?(y/n):" -n
 echo 
 if [[ "$REPLY" =~ ^[Yy]$ ]]
 then
-    nodejs "$DIR/process_source.js"
+    node $DIR/process_source.js 
     echo "Finished modify";
 fi
 

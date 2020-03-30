@@ -96,7 +96,9 @@
         * Current user's selected language in form en-EN, by default will use browser's language
         * @type {string}
         */
-        countlyCommon.BROWSER_LANG = countlyCommon.browserLang() || "en-US";
+        // countlyCommon.BROWSER_LANG = countlyCommon.browserLang() || "en-US";
+        // cancel dynamic language, force setting zh-CN
+        countlyCommon.BROWSER_LANG = "zh-CN";
         /**
         * Current user's browser language in short form as "en", by default will use browser's language
         * @type {string}
@@ -111,7 +113,8 @@
         }
 
         if (countlyGlobal.member.lang) {
-            var lang = countlyGlobal.member.lang;
+            // cancel dynamic language, force setting zh-CN
+            var lang = "zh";
             store.set("countly_lang", lang);
             countlyCommon.BROWSER_LANG_SHORT = lang;
             countlyCommon.BROWSER_LANG = lang;

@@ -1943,7 +1943,7 @@ var AppRouter = Backbone.Router.extend({
                     moment.locale(countlyCommon.BROWSER_LANG_SHORT);
                 }
                 catch (e) {
-                    moment.locale("en");
+                    moment.locale("zh");
                 }
 
                 countlyCommon.getMonths(true);

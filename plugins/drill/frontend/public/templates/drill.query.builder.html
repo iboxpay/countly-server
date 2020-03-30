@@ -1,0 +1,215 @@
+
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><script type="text/x-template" id="user-behaviour-segmentation-template">
+    <div id="user-behaviour-segmentation" class="panel drill-query-builder" v-if="steps">
+        <div class="panel-heading" v-once><span v-text="headerText"></span></div>
+        <div class="panel-body">
+            <step-row inline-template v-for="step in steps" v-bind:key="step.name" v-bind:step="step" >
+                <div>
+                    <div v-if="state === 'step'" class="condition-row">
+                        <conditional-range-row inline-template v-bind:key="step.name" v-bind:step="step" v-bind:on-remove-step="removeStep">
+                            <div>
+                                <div class="condition-range-row">
+                                    <div v-text="stepName"></div>
+                                    <div class="filter-block">
+                                        <div class="filter-table-block">
+                                            <div v-show="step.visibles.userActions">
+                                                <cly-select v-bind:items="model.behaviors" v-bind:selected-item="step.selectedBehavior" v-bind:placeholder="model.labels.selectPerformPlaceholder"
+                                                    v-bind:on-selection-change="onPerformSelected">
+                                                </cly-select>
+                                            </div>
+                                            <div v-show="step.visibles.events">
+                                                <cly-select v-bind:items="model.events" v-bind:selected-item="step.selectedEvent" v-bind:placeholder="model.labels.selectActionPlaceHolder"
+                                                    v-bind:on-selection-change="onEventSelected">
+                                                </cly-select>
+                                            </div>
+                                            <div v-show="step.visibles.timeAndFrequency">
+                                                <cly-frequency v-bind:labels="model.labels" v-bind:frequencies="model.frequencies" v-bind:on-changed="onFrequencySelected" v-bind:selected-frequency="step.selectedFrequency"></cly-frequency>
+                                                <cly-time-period v-bind:labels="model.labels" v-bind:periods="model.periods" v-bind:selected-period="step.selectedPeriod" v-bind:on-changed="onTimePeriodChanged"></cly-time-period>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <a href="#" v-on:click.prevent="onRemoveStep" v-if="isRemoveVisible" class="remove-row text-light-gray">
+                                            <i class="material-icons">highlight_off</i>
+                                        </a>
+                                    </div>
+
+                                </div>
+
+                            </div>
+                        </conditional-range-row>
+                        <segmentational-row inline-template v-bind:step="step">
+                            <div class="segmentation-row">
+                                <div class="segment-row">
+                                    <div class="text-dark-gray" v-if="step.filters.length > 0" style="font-weight:500" v-text="model.labels.whicHas"></div>
+                                    <segmentation-filter v-for="filter in step.filters" v-bind:key="filter.order" v-bind:filter="filter" v-bind:step="step" />
+                                </div>
+                                <a href="#" v-if="addSegmentationStatus" v-on:click="addSegmentation" class="text-orange add-segmentation-row-btn">
+                                    <i class="fa fa-filter"></i> <span v-text="model.labels.addSegmentation"></span></a>
+                            </div>
+                        </segmentational-row>
+                        <div class="line-row">
+                            <span v-if="isThenVisible" v-text="model.labels.thenText"></span>
+                        </div>
+                    </div>
+                    <div v-if="state === 'undo'" class="undo-row"><span v-text="model.labels.removeRow"></span> <a href="#" v-on:click.prevent="onUndo">撤销</a></div>
+                </div>
+            </step-row>
+            <div class="add-condition-row">
+                <button v-on:click="addCondition" class="btn btn-orange" v-bind:disabled="addConditionIsDisabled">+ <span v-text="labels.addCondition"></span></button>
+            </div>
+        </div>
+    </div>
+</script>
+<script type="text/x-template" id="user-property-segmentation-template">
+    <div id="user-property-segmentation" class="panel drill-query-builder">
+            <div class="panel-heading" v-once><span v-text="headerText"></span></div>
+            <div class="panel-body">
+                <user-segmentation-step inline-template v-bind:step="step">
+                    <segmentational-row inline-template v-bind:step="step">
+                        <div class="segmentation-row" style="padding-left:0px;display:table;width:100%">
+                            <div style="width:110px; display:table-cell; font-weight:300;line-height:2;color:#636363;vertical-align:top;padding-top:6px">用户</div>
+                            <div style="width:auto;display:table-cell;vertical-align:middle">
+                                <div class="segment-row">
+                                        <div class="text-dark-gray" v-if="!isUserSegmentation && step.filters.length > 0" style="font-weight:500" v-text="model.labels.whicHas"></div>
+                                        <segmentation-filter v-for="filter in step.filters" v-bind:key="filter.order" v-bind:filter="filter" v-bind:step="step" />
+                                    </div>
+                                    <a href="#" v-if="addSegmentationStatus" v-on:click="addSegmentation" class="text-orange add-segmentation-row-btn">
+                                        <i class="fa fa-filter"></i> <span v-text="model.labels.addSegmentation"></span></a>
+                            </div>
+                        </div>
+                    </segmentational-row>
+                </user-segmentation-step>
+            </div>
+    </div>
+</script>
+<script type="text/x-template" id="cly-frequency-template">
+    <div class="cly-select has-data float cly-frequency text-align-left" data-name="times" ref="cly-frequency">
+        <div class="select-inner">
+            <div class="text-container">
+                <div class="text" style="width:80%">
+                    <span class="text-light-gray" v-text="labels.defineFrequency"></span>
+                </div>
+            </div>
+            <div class="right combo"></div>
+        </div>
+        <div class="select-items square" ref="items" style="display: none;">
+            <div class="items">
+                <div class="item" v-for="item in frequencies" v-on:click.stop="itemOnSelect(item)">
+                    <div style="display:table-cell">
+                        <div class="styled-radio" v-bind:class="{checked : tempSelectedItem.equation === item.equation}"></div>
+                    </div>
+                    <label v-text="item.name"></label>
+                </div>
+                <div class="frequency-input" v-on:click.stop="">
+                    <div v-text="labels.numberOfItems"></div>
+                    <div>
+                        <input type="text" maxlength="9" class="custom-number" v-model="tempSelectedItem.value" v-on:keypress="isNumber" />
+                    </div>
+                    <div class="min-value-alert" v-if="isApplyDisabled" v-html="minValueAlert"></div>
+                    <div>
+                        <div class="icon-button green" v-bind:class="{'disabled' : isApplyDisabled}" v-on:click="applyValue" v-text="labels.apply"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</script>
+
+<script type="text/x-template" id="cly-time-period-template">
+    <div class="cly-select has-data float cly-time-period text-align-left float" data-name="period" ref="cly-time-period">
+        <div class="select-inner">
+            <div class="text-container">
+                <div class="text" style="width:80%">
+                    <span class="text-light-gray" v-text="labels.timeRange"></span>
+                </div>
+            </div>
+            <div class="right combo"></div>
+        </div>
+        <div class="select-items square" style="display: none;overflow: initial" ref="items">
+            <div class="items list-items" v-bind:class="{'list-items-selected' : !isCustomPanelVisible, 'period-select-selected' : isCustomPanelVisible }">
+                <div class="custom-range" v-on:click.stop="isCustomPanelVisible = true">
+                    <div style="display:inline-block" v-text="labels.customRange"></div>
+                    <span><i class="ion-chevron-right" style="font-size:10px"></i></span>
+                </div>
+
+                <div v-for="period in periods" class="item" v-on:click.stop="onItemSelect(period)" v-text="period.name"></div>
+            </div>
+            <div class="items period-select" v-on:click.stop="">
+                <div>
+                    <a href="#" v-on:click.prevent.stop="isCustomPanelVisible = false" class="back-button">
+                        <i class="ion-chevron-left" style="font-size:10px;margin-right:2px"></i> <span v-text="labels.back"></span>
+                    </a>
+                </div>
+                <div v-text="labels.numberOfDays"></div>
+                <div>
+                    <input type="text" maxlength="5" class="custom-number" v-model="customValue" v-on:keypress="isNumber"/>
+                </div>
+                <div class="min-value-alert"></div>
+                <div>
+                    <div class="icon-button green" v-bind:class="{'disabled' : isDisabled}" v-on:click="onApply" v-text="labels.apply"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</script>
+
+<script type="text/x-template" id="segmentation-filter-template">
+    <div>
+        <div v-if="state === 'filter'">
+            <div v-if="filter.andOrModel">
+                <cly-select v-bind:is-disabled="isDisabled || filter.andOrModel.items.length === 1" v-bind:items="filter.andOrModel.items" v-bind:selected-item="filter.andOrModel.selectedItem" class="cly-select-orange"
+                    v-bind:on-selection-change="onAndOrSelect"></cly-select>
+            </div>
+            <div class="segment-filter">
+                <div>
+                    <div>
+                        <cly-select v-bind:is-disabled="isDisabled" v-bind:placeholder="filter.propertyModel.placeholder" v-bind:items="propertyItems" v-bind:selected-item="filter.propertyModel.selectedItem"
+                            v-bind:on-selection-change="onPropertySelect"></cly-select>
+                    </div>
+                    <div>
+                        <cly-select v-bind:verticle-aligned="true" v-bind:items="equationFilters" class="field-equation" v-bind:selected-item="filter.equationModel.selectedItem"
+                            v-bind:on-selection-change="onEquationSelect"></cly-select>
+                    </div>
+                    <div>
+                        <cly-input v-if="(filter.equationModel.selectedItem && filter.equationModel.selectedItem.name === 'contains') || (!filter.propertyModel.selectedItem || filter.propertyModel.selectedItem.type==='s')" v-bind:value="filter.targetModel.selectedItem.value"
+                            v-bind:on-value-changed="onTargetValueChanged">
+                        </cly-input>
+                        <cly-input v-if="filter.propertyModel.selectedItem && filter.propertyModel.selectedItem.type==='n'" input-type="number" placeholder="Number"
+                            v-bind:on-value-changed="onTargetValueChanged" v-bind:value="filter.targetModel.selectedItem.value"></cly-input>
+                        <cly-select
+                            id="item-big-list"
+                            key="item-big-list"
+                            v-bind:is-big-list="true"
+                            v-bind:on-search="onFilterSearch"
+                            placeholder="----"
+                            v-if="(!filter.equationModel.selectedItem || filter.equationModel.selectedItem.name !== 'contains') && (filter.propertyModel.selectedItem && filter.propertyModel.selectedItem.type ==='bl')"
+                            v-bind:items="filter.targetModel.items"
+                            v-bind:selectedItem="filter.targetModel.selectedItem"
+                            v-bind:on-selection-change="onTargetValueChanged"></cly-select>
+
+                        <cly-select
+                            id="item-list"
+                            key="item-list"
+                            v-bind:is-big-list="false"
+                            v-bind:on-search="onFilterSearch"
+                            placeholder="----"
+                            v-if="(!filter.equationModel.selectedItem || filter.equationModel.selectedItem.name !== 'contains') && (filter.propertyModel.selectedItem && filter.propertyModel.selectedItem.type ==='l')"
+                            v-bind:items="filter.targetModel.items"
+                            v-bind:selectedItem="filter.targetModel.selectedItem"
+                            v-bind:on-selection-change="onTargetValueChanged"></cly-select>
+                        <cly-datepicker v-if="filter.propertyModel.selectedItem && filter.propertyModel.selectedItem.type==='d'" v-bind:on-value-changed="onTargetValueChanged"
+                            v-bind:value="filter.targetModel.selectedItem.value" v-bind:text="filter.targetModel.selectedItem.text"
+                            v-bind:max-date="filter.targetModel.maxDate"></cly-datepicker>
+                    </div>
+                </div>
+                <div>
+                    <a href="#" v-on:click="removeFilter" class="remove-row text-light-gray">
+                        <i class="material-icons">highlight_off</i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div v-if="state === 'undo'" class="undo-row"><span v-text="model.labels.removeRow"></span> <a href="#" v-on:click.prevent="onUndo">Undo</a></div>
+    </div>
+</script></head><body></body></html>

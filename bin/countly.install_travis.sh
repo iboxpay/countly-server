@@ -87,6 +87,14 @@ bash "$DIR/scripts/detect.init.sh"
 #create api configuration file from sample
 cp "$DIR/../api/config.sample.js" "$DIR/../api/config.js"
 
+if [ ! -f $DIR/../api/configs/config.db_out.js ]; then
+	cp $DIR/../api/configs/config.db_out.sample.js $DIR/../api/configs/config.db_out.js
+fi
+
+if [ ! -f $DIR/../api/configs/config.db_fs.js ]; then
+	cp $DIR/../api/configs/config.db_fs.sample.js $DIR/../api/configs/config.db_fs.js
+fi
+
 #create app configuration file from sample
 cp "$DIR/../frontend/express/config.sample.js" "$DIR/../frontend/express/config.js"
 

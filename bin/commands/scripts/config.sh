@@ -16,5 +16,5 @@ elif [ -z "$2" ]
 then
     nodejs "$DIR/config.js" "$1" ;
 else
-    nodejs "$DIR/config.js" "$1" "$2" ;
+    node $DIR/config.js $1 $2 ;
 fi

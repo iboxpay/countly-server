@@ -1,0 +1,268 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"></head><body><div id="funnel-common-view">
+    <div id="event-nav">
+        <div id="event-nav-head">
+            <div id="event-nav-title" style="max-width: 120px; text-transform: uppercase;" data-localize="sidebar.funnels">FUNNELS</div>
+            <div style="overflow:hidden; position:absolute; top:14px; right:10px;">
+                <div class="icon-button help-zone-vs" id="funnel-configure-button" style="padding:4px 1px;">
+                    <i class="ion-gear-a" style="font-size: 23px; margin: 0; line-height: 16px; color: #6B6B6B"></i>
+                </div>
+            </div>
+        </div>
+        <a id="create-funnel-button">
+            <i class="icon ion-plus-circled"></i>
+            <span data-localize="funnels.create">Create a Funnel</span>
+        </a>
+        <div class="nav-search">
+            <i class="fa fa-search"></i>
+            <input type="text">
+        </div>
+        <div class="scrollable" style="max-height: 450px;">
+            {{#eachOfArray funnels}}
+            <div class="searchable event-container {{#if value.is_active}}active{{/if}} funnel-container" data-id="{{value._id}}">
+                <div class="name" title="{{value.name}}">{{value.name}}</div>
+            </div>
+            {{/eachOfArray}}
+        </div>
+    </div>
+    <div style="margin-left: 199px; min-width:700px;">
+        <div class="remind-row">
+            <div class="content">
+                <i class="material-icons">error</i>
+                <span class="remind-context"></span>
+            </div>
+        </div>
+
+        <div class="widget" id="view-funnel">
+            <div class="widget-header">
+                <div class="left">
+                    <div class="title dynamic-title funnel-name-title">{{page-title}}</div>
+                </div>
+                {{> date-selector }}
+            </div>
+
+            <div class="widget-content help-zone-vb" data-help-localize="{{{chart-helper}}}" style="position:relative;">
+                <div id="view-filter" class="in-funnels">
+                    <div class="separator in-funnels"></div>
+                    <div id="toggle-filter" style="padding:10px; cursor:pointer; position:relative; min-height:20px">
+                        <div id="current-filter" style="display:none; font-family:Ubuntu; font-size:15px; text-align:center; color:#999;">
+                            <div class="text"></div>
+                            <div id="remove-filter" style="position: absolute;font-size: 16px;right: 0px;top: 0px;width: 33px;height: 29px;padding-top: 11px;">
+                                <i class="ion-close"></i>
+                            </div>
+                        </div>
+                        <div id="no-filter" style="font-size:13px; text-transform: uppercase;color:#5f5f5f;">
+                            <div class="on-off-switch" id="switch-trigger">
+                                <input type="checkbox" class="on-off-switch-checkbox" id="apply-filter-cbox">
+                                <label class="on-off-switch-label" for="apply-filter-cbox"></label>
+                            </div>
+                            <span style="user-select: none; top: 1px; position: relative;" data-localize="drill.apply-filter">Apply Filter</span>
+                        </div>
+                    </div>
+                    <div class="filter-view-container centered in-funnels">
+                        {{> filter-view }}
+                    </div>
+                </div>
+                <div class="graph-description funnel-description">{{funnel-description}}</div>
+                <div id="funnel-top">
+                    <div>
+                        <div class="block">
+                            <div>
+                                <div class="inner">
+                                    <div class="data">
+                                        <div class="text" data-localize="funnels.total-users">TOTAL USERS</div>
+                                    </div>
+                                    <div class="number num-animation total-users" data-target=""></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="block">
+                            <div>
+                                <div class="inner">
+                                    <div class="data">
+                                        <div class="text" data-localize="funnels.total-users-entered">USERS ENTERED</div>
+                                    </div>
+                                    <div style="display:flex; justify-content: center; align-items: center; text-align: left">
+                                        <div class="number num-animation users-in-first-step" style="padding-right: 10px" data-target=""></div>
+                                        <div class="user-entered-percent" style="padding-left: 0px;color:#848484;font-weight: 200; font-size: 13px"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="block">
+                            <div>
+                                <div class="inner">
+                                    <div class="data">
+                                            <span data-localize="funnels.completed">COMPLETED</span>
+                                    </div>
+                                    <div style="display:flex; justify-content: center; align-items: center; text-align: left">
+                                        <div class="number num-animation success_users" style="padding-right: 10px" data-target=""></div>
+                                        <div style="padding-left: 0px;color:#848484; font-weight: 200; font-size: 13px">
+                                            <div class="user-completed-percentage"></div>
+                                            <div class="user-completed-percentage-by-entered"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="funnel-steps">
+                    <div class="funnel-color-info" style="display: flex;">
+                        <div style="flex:1;text-align: left; padding-left: 20px; display: flex; align-items: center">
+                            <span style="font-weight: 200; color: #666666"><span data-localize="funnels.relative-to-users"></span>:</span>
+                            <div id="funnelTypeSelect" class="cly-select" style="margin-left: 10px;border-width: 0px;">
+                                <div class="select-inner" style="background-color: #EBEBEB;">
+                                    <div class="text-container">
+                                        <div class="text" style="color: #666666;font-weight: 500" data-localize="funnels.users-entered">users entered</div>
+                                    </div>
+                                    <div class="right combo"></div>
+                                </div>
+                                <div class="select-items square">
+                                    <div>
+                                        <div data-value="0" class="item" data-localize="funnels.all-users">all users</div>
+                                        <div data-value="1" class="item" data-localize="funnels.users-entered">users entered</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="funnel-color-info-row" style="flex:1">
+                            <div>
+                                <div style="display:inline-block">
+                                    <i style="background-color:#56A5EC"></i>
+                                    <span data-localize="funnels.users-performed-step">
+                                        Users that performed the step
+                                    </span>
+                                </div>
+                            </div>
+                            <div>
+                                <div>
+                                    <i style="background-color: #F56164"></i>
+                                    <span data-localize="funnels.users-not-performed-step">
+                                        Users that didn't perform the step
+                                    </span>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="funnel-step-info">
+                        <div>
+                            <div class="tag">
+                                <div class="segment-icon ion-funnel" style="display: none"></div>
+                                <div class="step-name"></div>
+                                <div class="step-queryText"></div>
+                                <div class="step-queryText-all"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="funnel-events"></div>
+
+                    <div class="funnel-step-data" style="display:none; width:100%; float:left; overflow-x:auto; overflow-y:hidden; position:relative;">
+
+                        <div class="data-part">
+                            <div class="connector">
+                                <span></span>
+                            </div>
+                            <div class="connector-line-container">
+
+                            </div>
+                            <div class="data-container">
+                                <div class="bar-container">
+                                    <div class="moving-bar step-users-percent-bar" style="max-width: 90%" data-percent=""></div>
+                                    <div class="moving-bar step-users-percent-left-bar" style="max-width: 90%" data-percent=""></div>
+                                    <!-- <div class="moving-number step-users-percent" data-percent="">0%</div> -->
+                                </div>
+                                <div class="numbers-container" style="display: flex">
+                                    <div class="moving-bar step-users-percent-info" data-percent="">
+                                        <div class="moving-number step-users-percent" data-percent="">0%</div>
+                                        <div class="users" style="font-size:14;">
+                                            <span class="num-animation step-users" data-target="">0</span>
+                                            <span data-localize="funnels.users"></span>
+                                        </div>
+                                        <div class="times" style="font-size:14;">
+                                            <span class="num-animation step-times" data-target="">0</span>
+                                            <span data-localize="funnels.times"></span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="moving-number step-users-percent-left" data-percent="">0%</div>
+                                        <div class="users-left" style="font-size:14;display:inline-block">
+                                            <span class="num-animation step-users-left" data-target="">0</span>
+                                            <span data-localize="funnels.users"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div class="funnel-step-data-container" style="overflow:auto;position:relative">
+                        <div class="vertical-line"></div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        <div class="widget empty-funnel" id="empty-funnel">
+            <div class="empty-funnel-container">
+                <div>
+                    <span data-localize="funnels.create-first-funnel"></span>
+                    <p data-localize="funnels.create-first-message"></p>
+                </div>
+                <div>
+                    <img src="./funnels/images/funnels/funnel-empty.svg">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="widget" id="empty-funnel-no-event" style="display: none">
+    <div class="widget-header">
+        <div class="left">
+            <div class="title dynamic-title funnel-name-title" data-localize="funnels.plugin-title"></div>
+        </div>
+    </div>
+    <div class="widget-content help-zone-vb">
+        <div class="widget empty-funnel" style="box-shadow: none">
+            <div class="empty-funnel-container">
+                <div>
+                    <span data-localize="funnels.create-first-funnel-no-event"></span>
+                    <p data-localize="funnels.create-first-message-no-event"></p>
+                </div>
+                <div>
+                    <img src="./funnels/images/funnels/funnel-empty.svg">
+                </div>
+            </div>
+            <div style="clear: both"></div>
+        </div>
+    </div>
+</div>
+
+<div id="funnel-edit-view" style="display:none">
+    <a id="back-to-funnels" class="back back-link" style="margin-bottom: 25px;">
+        <span data-localize="funnels.back-to"></span>
+    </a>
+    <div class="container">
+        <div class="widget">
+            <div class="widget-header">
+                <div class="left">
+                    <div class="title" data-localize="funnels.plugin-title"></div>
+                </div>
+            </div>
+            <div class="widget-content">
+                <div class="graph-description" style="border-width:0px 0px 1px 0px; border-color: #D0D0D0" data-localize="funnels.edit-funnel-message">
+                </div>
+                <div class="cly-button-menu funnels-options-menu" tabindex="1">
+                    <a class="item edit-funnel"><i class="fa fa-pencil edit-funnel"></i><span class="edit-funnel" data-localize="funnels.edit"></span></a>
+                    <a class="item delete-funnel"><i class="fa fa-trash delete-funnel"></i><span class="delete-funnel" data-localize="funnels.delete"></span></a>
+                </div>
+                <table id="funnelsDataTable" class="d-table cohorts-table help-zone-vb no-fix" cellpadding="0" cellspacing="0" data-help-localize="help.{{{table-helper}}}"></table>
+            </div>
+        </div>
+
+    </div>
+</div>
+</body></html>

@@ -36,11 +36,12 @@ fi
 curl -sL https://rpm.nodesource.com/setup_10.x | bash -
 yum install -y nodejs
 
+yum install -y which
 set +e
-NODE_JS_CMD=$(which nodejs)
+NODE_JS_CMD=$(which node)
 set -e
-if [[ -z "$NODE_JS_CMD" ]]; then
-	ln -s "$(which node)" /usr/bin/nodejs
+if [[ -z $NODE_JS_CMD ]]; then
+	ln -s `which node` /usr/bin/node
 fi
 
 #install nginx
@@ -62,14 +63,20 @@ if grep -q -i "release 6" /etc/redhat-release ; then
     bash "$DIR/scripts/install-python27.sh"
 else
     yum install -y python-pip
-    pip install pip --upgrade
+    pip install pip --upgrade -i https://mirrors.aliyun.com/pypi/simple/
     yum install -y python-meld3
-    pip install supervisor --ignore-installed meld3
+    pip install supervisor --ignore-installed meld3 -i https://mirrors.aliyun.com/pypi/simple/
 fi
 
 #install sendmail
 yum -y install sendmail
-service sendmail start
+if grep -q -i "release 6" /etc/redhat-release ; then
+    service sendmail start
+    chkconfig sendmail on
+else
+    #systemctl start sendmail
+    systemctl enable sendmail
+fi
 
 #install new gcc
 if grep -q -i "release 6" /etc/redhat-release ; then
@@ -94,7 +101,10 @@ if [[ "$GLIBC_VERSION" != "2.25" ]]; then
 fi
 
 #install mongodb
-bash "$DIR/scripts/mongodb.install.sh"
+if [ "$INSIDE_DOCKER_NOMONGO" != "1" ]
+then
+    bash $DIR/scripts/mongodb.install.sh
+fi
 
 cp "$DIR/../frontend/express/public/javascripts/countly/countly.config.sample.js" "$DIR/../frontend/express/public/javascripts/countly/countly.config.js"
 
@@ -111,8 +121,13 @@ countly save /etc/nginx/conf.d/default.conf "$DIR/config/nginx"
 countly save /etc/nginx/nginx.conf "$DIR/config/nginx"
 cp "$DIR/config/nginx.server.conf" /etc/nginx/conf.d/default.conf
 cp "$DIR/config/nginx.conf" /etc/nginx/nginx.conf
-service nginx restart
-chkconfig nginx on
+if grep -q -i "release 6" /etc/redhat-release ; then
+    service nginx restart
+    chkconfig nginx on
+else
+    systemctl start nginx
+    systemctl enable nginx
+fi
 set -e
 
 #create configuration files from samples
@@ -126,6 +141,17 @@ fi
 
 if [ ! -f "$DIR/../plugins/plugins.json" ]; then
 	cp "$DIR/../plugins/plugins.default.json" "$DIR/../plugins/plugins.json"
+    
+if [ ! -f $DIR/../api/configs/config.db_out.js ]; then
+	cp $DIR/../api/configs/config.db_out.sample.js $DIR/../api/configs/config.db_out.js
+fi
+
+if [ ! -f $DIR/../api/configs/config.db_fs.js ]; then
+	cp $DIR/../api/configs/config.db_fs.sample.js $DIR/../api/configs/config.db_fs.js
+fi
+
+if [ ! -f $DIR/../frontend/express/config.js ]; then
+	cp $DIR/../frontend/express/config.sample.js $DIR/../frontend/express/config.js
 fi
 
 if [ ! -f "/etc/timezone" ]; then

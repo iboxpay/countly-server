@@ -13,7 +13,7 @@ echo "
  / /   / __ \/ / / / __ \/ __/ / / / /
 / /___/ /_/ / /_/ / / / / /_/ / /_/ /
 \____/\____/\__,_/_/ /_/\__/_/\__, /
-              http://count.ly/____/
+   http://countly.iboxpay.com/____/
 "
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
