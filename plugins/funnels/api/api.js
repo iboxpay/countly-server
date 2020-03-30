@@ -149,9 +149,39 @@ const log = require('../../../api/utils/log.js')('funnels:api');
                 filter.ts.$lt.setTimezone(params.appTimezone);
                 filter.ts.$lt = filter.ts.$lt.getTime() + filter.ts.$lt.getTimezoneOffset() * 60000;
 
-                let promises = [];
-                promises.push(new Promise((resolve, reject) => {
-                    common.db.collection('funnels').findOne({_id: common.db.ObjectID(id)}, {steps: 1, queries: 1, queryTexts: 1, _id: 0}, function(err, res) {
+                // let promises = [];
+                // promises.push(new Promise((resolve, reject) => {
+                //     common.db.collection('funnels').findOne({_id: id}, {steps: 1, queries: 1, queryTexts: 1, _id: 0}, function(err, res) {
+                //         if (!err && res && res.steps && res.steps.length > 1) {
+                //             try {
+                //                 res.steps = JSON.parse(res.steps);
+                //                 res.queries = JSON.parse(res.queries);
+                //                 res.queryTexts = JSON.parse(res.queryTexts);
+                //             } catch (error) {
+                //                 reject(error);
+                //             }
+                //             resolve(res);
+                //         } else {
+                //             log.d(err);
+                //             reject(err);
+                //         }
+                //     });
+                // }));
+                
+                // promises.push(new Promise((resolve, reject) => {
+                //     common.db.collection('app_users' + appId).estimatedDocumentCount(function(err, total){
+                //         if (!err && total) {
+                //             resolve(total);
+                //         } else {
+                //             log.d(err);
+                //             reject(err);
+                //         }
+                //     });
+                // }));
+
+                // if (promises.length) {
+                new Promise((resolve, reject) => {
+                    common.db.collection('funnels').findOne({_id: id}, {steps: 1, queries: 1, queryTexts: 1, _id: 0}, function(err, res) {
                         if (!err && res && res.steps && res.steps.length > 1) {
                             try {
                                 res.steps = JSON.parse(res.steps);
@@ -166,216 +196,206 @@ const log = require('../../../api/utils/log.js')('funnels:api');
                             reject(err);
                         }
                     });
-                }));
-                
-                promises.push(new Promise((resolve, reject) => {
-                    common.db.collection('app_users' + appId).estimatedDocumentCount(function(err, total){
-                        if (!err && total) {
-                            resolve(total);
-                        } else {
-                            log.d(err);
-                            reject(err);
-                        }
-                    });
-                }));
-
-                if (promises.length) {
-                    Promise.all(promises).then(param => {
-                        new Promise((resolve, reject) => {
-                            let funnel = param[0];
-                            let totalUsers = param[1];
-                            let tmpSteps = funnel.steps;
-                            let tmpQueries = funnel.queries;
-                            let tmpQueryTexts = funnel.queryTexts;
-                            let key = tmpSteps[0];
-                            let collectionName = "drill_events" + crypto.createHash('sha1').update(key + appId).digest('hex');
-                            let users = 0,
-                                leftUsers = 0;
-                            common.drillDb.collection(collectionName).find(filter, {uid: 1, dur: 1, _id: 0}).toArray(function(err, res){
-                                if (!err && res && res.length > 0) {
-                                    let uids = [], times = 0;
-                                    for (let i = 0; i < res.length; i++) { // clear repeat uid, times plus
-                                        let item = res[i];
-                                        times += common.isNumber(item.dur) ? parseInt(item.dur) : 0;
-                                        if (i != 0) {
-                                            let lastItem = res[i - 1];
-                                            if (lastItem.uid === item.uid) {
-                                                continue;
-                                            } else {
+                // Promise.all(promises).then(param => {
+                }).then(res => {
+                    new Promise((resolve, reject) => {
+                        let funnel = res;
+                        // let totalUsers = param[1];
+                        let totalUsers = 0;
+                        let tmpSteps = funnel.steps;
+                        let tmpQueries = funnel.queries;
+                        let tmpQueryTexts = funnel.queryTexts;
+                        let key = tmpSteps[0];
+                        let collectionName = "drill_events" + crypto.createHash('sha1').update(key + appId).digest('hex');
+                        let users = 0,
+                            leftUsers = 0;
+                        common.drillDb.collection(collectionName).find(filter, {uid: 1, c: 1, _id: 0}).toArray(function(err, res){
+                            if (!err && res && res.length > 0) {
+                                let uids = [], times = 0;
+                                for (let i = 0; i < res.length; i++) { // clear repeat uid, times plus
+                                    let item = res[i];
+                                    times += common.isNumber(item.c) ? parseInt(item.c) : 0;
+                                    if (i != 0) {
+                                        let lastItem = res[i - 1];
+                                        if (lastItem.uid === item.uid) {
+                                            continue;
+                                        } else {
+                                            if (!uids.includes(res[i].uid)) {
                                                 uids.push(res[i].uid);
                                             }
-                                        } else {
-                                            uids.push(res[i].uid);
                                         }
+                                    } else {
+                                        uids.push(res[i].uid);
                                     }
-
-                                    users = uids.length;
-                                    leftUsers = totalUsers - users;
-                                    let percent = (users / totalUsers).toFixed(3) * 100;
-                                    let percentLeft = (leftUsers / totalUsers).toFixed(3) * 100;
-                                    let item = {
-                                        step: tmpSteps[0], 
-                                        totalUsers: totalUsers, 
-                                        users: users, 
-                                        leftUsers: leftUsers,
-                                        percent: percent,
-                                        percentUserEntered: percent,
-                                        percentLeft: percentLeft,
-                                        percentLeftUserEntered: percentLeft
-                                    };
-                                    if (tmpQueries[0]) {
-                                        item.queries = tmpQueries[0];
-                                    }
-                                    if (tmpQueryTexts[0]) {
-                                        item.queryText = tmpQueryTexts[0];
-                                    }
-
-                                    item.times = times;
-                                    item.averageTimeSpend = (times / users).toFixed(0);
-
-                                    steps.push(item);
-                                    result.total_users = totalUsers;
-                                    result.users_in_first_step = users;
-
-                                    funnel.steps.shift();
-                                    funnel.queries.shift();
-                                    funnel.queryTexts.shift();
-
-                                    let data = [];
-                                    data.push(funnel.steps);
-                                    data.push(users);
-                                    data.push(uids)
-                                    data.push(funnel.queries);
-                                    data.push(funnel.queryTexts);
-                                    resolve(data);
-                                } else {
-                                    log.d(err);
-                                    reject(err);
                                 }
-                            });
-                        }).then(data => {
-                            function get(params) {
-                                return new Promise((resolve, reject) => {
-                                    let tmpSteps = params[0];
-                                    let totalUsers = params[1];
-                                    let uid = params[2];
-                                    let tmpQueries = params[3];
-                                    let tmpQueryTexts = params[4];
+                                totalUsers = uids.length;
+                                users = uids.length;
+                                leftUsers = totalUsers - users;
+                                let percent = (users / totalUsers).toFixed(3) * 100;
+                                let percentLeft = (leftUsers / totalUsers).toFixed(3) * 100;
+                                let item = {
+                                    step: tmpSteps[0], 
+                                    totalUsers: totalUsers, 
+                                    users: users, 
+                                    leftUsers: leftUsers,
+                                    percent: percent,
+                                    percentUserEntered: percent,
+                                    percentLeft: percentLeft,
+                                    percentLeftUserEntered: percentLeft
+                                };
+                                if (tmpQueries[0]) {
+                                    item.queries = tmpQueries[0];
+                                }
+                                if (tmpQueryTexts[0]) {
+                                    item.queryText = tmpQueryTexts[0];
+                                }
 
-                                    let users = 0,
-                                        leftUsers = 0;
-                                    let key = tmpSteps[0];
-                                    
-                                    let collectionName = "drill_events" + crypto.createHash('sha1').update(key + appId).digest('hex');
+                                item.times = times;
+                                item.averageTimeSpend = (times / users).toFixed(0);
 
-                                    async.map(uid, fetchDrillEvent, (err, events) => {
-                                        if (!err && events) {
-                                            let uids = [], times = 0;
-                                            events.forEach(element => {
-                                                if (element) {
-                                                    uids.push(element.uid);
-                                                    times += common.isNumber(element.dur) ? parseInt(element.dur) : 0;
-                                                }
-                                            });
-                                            if (uids.length) {
-                                                users = uids.length;
-                                                leftUsers = totalUsers - users;
-                                                let percent = (users / totalUsers).toFixed(3) * 100;
-                                                let percentLeft = (leftUsers / totalUsers).toFixed(3) * 100;
-                                                let item = {
-                                                    step: tmpSteps[0], 
-                                                    totalUsers: totalUsers, 
-                                                    users: users, 
-                                                    leftUsers: leftUsers,
-                                                    percent: percent,
-                                                    percentUserEntered: percent,
-                                                    percentLeft: percentLeft,
-                                                    percentLeftUserEntered: percentLeft
-                                                };
-                                                if (tmpQueries[0]) {
-                                                    item.queries = tmpQueries[0];
-                                                }
-                                                if (tmpQueryTexts[0]) {
-                                                    item.queryText = tmpQueryTexts[0];
-                                                }
-    
-                                                item.times = times;
-                                                item.averageTimeSpend = (times / users).toFixed(0);
-    
-                                                steps.push(item);
-                
-                                                tmpSteps.shift();
-                                                tmpQueries.shift();
-                                                tmpQueryTexts.shift();
-                
-                                                let data = [];
-                                                data.push(tmpSteps);
-                                                data.push(users);
-                                                data.push(uids)
-                                                data.push(tmpQueries);
-                                                data.push(tmpQueryTexts);
-                                                resolve(data);
-                                            } else {
-                                                log.d('length equal 0');
-                                                reject(err);
+                                steps.push(item);
+                                result.total_users = totalUsers;
+                                result.users_in_first_step = users;
+
+                                funnel.steps.shift();
+                                funnel.queries.shift();
+                                funnel.queryTexts.shift();
+
+                                let data = [];
+                                data.push(funnel.steps);
+                                data.push(users);
+                                data.push(uids)
+                                data.push(funnel.queries);
+                                data.push(funnel.queryTexts);
+                                resolve(data);
+                            } else {
+                                log.d(err);
+                                reject(err);
+                            }
+                        });
+                    }).then(data => {
+                        function get(params) {
+                            return new Promise((resolve, reject) => {
+                                let tmpSteps = params[0];
+                                let totalUsers = params[1];
+                                let uid = params[2];
+                                let tmpQueries = params[3];
+                                let tmpQueryTexts = params[4];
+
+                                let users = 0,
+                                    leftUsers = 0;
+                                let key = tmpSteps[0];
+                                
+                                let collectionName = "drill_events" + crypto.createHash('sha1').update(key + appId).digest('hex');
+
+                                async.map(uid, fetchDrillEvent, (err, events) => {
+                                    if (!err && events) {
+                                        let uids = [], times = 0;
+                                        events.forEach(element => {
+                                            if (element) {
+                                                uids.push(element.uid);
+                                                times += common.isNumber(element.c) ? parseInt(element.c) : 0;
                                             }
+                                        });
+                                        if (uids.length) {
+                                            users = uids.length;
+                                            leftUsers = totalUsers - users;
+                                            let percent = (users / totalUsers).toFixed(3) * 100;
+                                            let percentLeft = (leftUsers / totalUsers).toFixed(3) * 100;
+                                            let item = {
+                                                step: tmpSteps[0], 
+                                                totalUsers: totalUsers, 
+                                                users: users, 
+                                                leftUsers: leftUsers,
+                                                percent: percent,
+                                                percentUserEntered: percent,
+                                                percentLeft: percentLeft,
+                                                percentLeftUserEntered: percentLeft
+                                            };
+                                            if (tmpQueries[0]) {
+                                                item.queries = tmpQueries[0];
+                                            }
+                                            if (tmpQueryTexts[0]) {
+                                                item.queryText = tmpQueryTexts[0];
+                                            }
+
+                                            item.times = times;
+                                            item.averageTimeSpend = (times / users).toFixed(0);
+
+                                            steps.push(item);
+            
+                                            tmpSteps.shift();
+                                            tmpQueries.shift();
+                                            tmpQueryTexts.shift();
+            
+                                            let data = [];
+                                            data.push(tmpSteps);
+                                            data.push(users);
+                                            data.push(uids)
+                                            data.push(tmpQueries);
+                                            data.push(tmpQueryTexts);
+                                            resolve(data);
                                         } else {
-                                            log.d(err);
+                                            log.d('length equal 0');
                                             reject(err);
                                         }
-                                    });
-
-                                    /**
-                                     * fetch drill event
-                                     * @param {string} key - key to of event to fetchDrillEvent 
-                                     * @param {function} callback - for result
-                                     */
-                                    function fetchDrillEvent(key, callback) {
-                                        let uidVal = key;
-                                        common.drillDb.collection(collectionName).find({uid: uidVal}, {uid: 1, dur: 1, _id: 0}).toArray(function(err, res) {
-                                            let result, dur = 0;
-                                            if (!err && res && res.length > 0) {
-                                                for (let i = 0; i < res.length; i++) {
-                                                    dur += common.isNumber(res[i].dur) ? parseInt(res[i].dur) : 0;
-                                                }
-                                                result = {};
-                                                result.uid = res[0].uid;
-                                                result.dur = dur;
-                                            } else {
-                                                log.d(err);
-                                            }
-                                            callback(false, result);
-                                        })
+                                    } else {
+                                        log.d(err);
+                                        reject(err);
                                     }
-                                })
-                                .then(function(data) {
-                                    if(!data[0].length) { // recursive end
-                                        return data;
-                                    }
-                            
-                                    return get(data) // recursive call
-                                        .then(data => {
-                                            return data; // recursive call end
-                                        });
-                                }, err => {
-                                    common.returnOutput(params, []);
                                 });
-                            }
 
-                            get(data).then(data => {
-                                result.steps = steps;
-                                let last = steps[steps.length - 1];
-                                result.success_users = last.users;
-                                result.success_rate = (result.success_users / result.users_in_first_step).toFixed(3) * 100;
-                                common.returnOutput(params, result);
+                                /**
+                                 * fetch drill event
+                                 * @param {string} key - key to of event to fetchDrillEvent 
+                                 * @param {function} callback - for result
+                                 */
+                                function fetchDrillEvent(key, callback) {
+                                    let uidVal = key;
+                                    common.drillDb.collection(collectionName).find({uid: uidVal}, {uid: 1, c: 1, _id: 0}).toArray(function(err, res) {
+                                        let result, c = 0;
+                                        if (!err && res && res.length > 0) {
+                                            for (let i = 0; i < res.length; i++) {
+                                                c += common.isNumber(res[i].c) ? parseInt(res[i].c) : 0;
+                                            }
+                                            result = {};
+                                            result.uid = res[0].uid;
+                                            result.c = c;
+                                        } else {
+                                            log.d(err);
+                                        }
+                                        callback(false, result);
+                                    })
+                                }
+                            })
+                            .then(function(data) {
+                                if(!data[0].length) { // recursive end
+                                    return data;
+                                }
+                        
+                                return get(data) // recursive call
+                                    .then(data => {
+                                        return data; // recursive call end
+                                    });
+                            }, err => {
+                                common.returnOutput(params, []);
                             });
-                        }, err => {
-                            common.returnOutput(params, []);
+                        }
+
+                        get(data).then(data => {
+                            result.steps = steps;
+                            let last = steps[steps.length - 1];
+                            result.success_users = last.users;
+                            result.success_rate = (result.success_users / result.users_in_first_step).toFixed(3) * 100;
+                            common.returnOutput(params, result);
                         });
                     }, err => {
                         common.returnOutput(params, []);
                     });
-                }
+                }, err => {
+                    common.returnOutput(params, []);
+                });
+                // }
             });
             return true;
         }
@@ -422,6 +442,8 @@ const log = require('../../../api/utils/log.js')('funnels:api');
             }
             funnel.queries = params.qstring.queries;
             funnel.queryTexts = params.qstring.queryTexts;
+            
+            funnel._id = common.md5Hash(funnel.app_id + funnel.name);
             common.db.collection('funnels').insert(funnel, function(err, result) {
                 if (!err && result && result.insertedIds && result.insertedIds[0]) {
                     plugins.dispatch("/updateAlert", { method: "alertTrigger", alert: result.ops[0] });
@@ -518,6 +540,31 @@ const log = require('../../../api/utils/log.js')('funnels:api');
             }
         }, obParams);
         return true;
+    });
+
+    plugins.register("/i/apps/create", function(ob) {
+        var appId = ob.appId;
+        common.db.collection('funnels').ensureIndex({'app_id': 1}, function() {});
+    });
+
+    plugins.register("/i/apps/delete", function(ob) {
+        var appId = ob.appId;
+        common.db.collection('funnels').remove({'app_id': appId}, function() {});
+    });
+
+    plugins.register("/i/apps/reset", function(ob) {
+        var appId = ob.appId;
+        common.db.collection('funnels').remove({'app_id': appId}, function() {});
+    });
+
+    plugins.register("/i/apps/clear_all", function(ob) {
+        var appId = ob.appId;
+        common.db.collection('funnels').remove({'app_id': appId}, function() {});
+    });
+
+    plugins.register("/i/apps/clear", function(ob) {
+        var appId = ob.appId;
+        common.db.collection('funnels').remove({'app_id': appId}, function() {});
     });
 }(plugin));
 

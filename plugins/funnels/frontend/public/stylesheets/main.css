@@ -35,7 +35,7 @@
 .funnel-events .tag .step-queryText > div > span { font-weight: 500; color: #4a4a4a; text-transform: uppercase}
 .funnel-events .tag .step-queryText-all{display:none; font-size: 11px;margin-right: 18px;white-space: normal;margin-top: 8px;text-decoration: underline dotted;cursor: pointer;font-weight: 500;}
 .funnel-events .tag .segment-icon {float: right;margin: 12px 10px 0px 0px;font-size: 13px; color: #F56164}
-.data-part { position:relative; overflow:hidden; padding-top:40px; height:92px; }
+.data-part { position:relative; overflow:hidden; padding-top:40px; height:98px; }
 .data-part .connector { float:left; height:26px; width:26px; border-radius: 60px; margin-left:6px; background-color: #FFF; border: 1px solid #adabab; text-align: center; outline: 3px solid #FFF}
 .data-part .connector>span { display: inline-block; color: #636363; padding-top: 5px; font-size: 14px; }
 .data-part .connector-line-container { float:left; position:relative; overflow:hidden; width:40px; height:20px; margin-top:6px; }
