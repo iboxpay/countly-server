@@ -44,7 +44,7 @@ var pluginManager = function pluginManager() {
     /**
      *  Events prefixed with [CLY]_ that should be recorded in drill
      */
-    this.internalDrillEvents = ["[CLY]_session", "[CLY]_view"];
+    this.internalDrillEvents = ["[CLY]_session", "[CLY]_view", "[CLY]_action"];
     /**
      *  Segments for events prefixed with [CLY]_ that should be omitted
      */

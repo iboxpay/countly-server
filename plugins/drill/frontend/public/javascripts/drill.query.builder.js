@@ -210,26 +210,17 @@
             removeFilter: function (e) {
                 e.preventDefault();
                 var self = this;
-                var builderType = this.model.queryBuilderType;
+                this.state = 'undo';
                 this.filter.isRemoved = true;
                 this.$parent.$parent.$parent.$emit('query_changed');
-                if (builderType == "cohorts" && self.step.filters.length == 1) {
+
+                this.tOut = setTimeout(function () {
                     self.step.filters.splice(self.step.filters.indexOf(self.filter), 1);
-                    addSegmentation(self.step, self.model);
-                } else {
-                    if (!localStorage.getItem('preventRemove')) {
-                        localStorage.setItem('preventRemove', 1);
-                        this.state = 'undo';
-                        this.tOut = setTimeout(function () {
-                            self.step.filters.splice(self.step.filters.indexOf(self.filter), 1);
-                            localStorage.removeItem('preventRemove');
-                        }, 2000);
-                    }
-                }
+                }, 2000)
             },
             onPropertySelect: function (item) {
                 this.filter.propertyModel.selectedItem = item;
-                this.filter.targetModel._swappedItems = null;
+
                 var defaultEquation = item.type === "d" ? ">=" : "=";
                 this.filter.equationModel.selectedItem = this.filter.equationModel.items.find(function (filter) { return filter.value === defaultEquation });
 
@@ -242,13 +233,11 @@
                 if (this.step.selectedEvent.value !== countlySegmentation.getEvent()) {
                     countlySegmentation.initialize(this.step.selectedEvent.value).then(function () {
                         setFilterTarget(self.step, self.filter, null, self.model, function(){
-                            self.filter.targetModel.selectedItem = { value: null, name: '' };
                             self.setQueryText();
                         });
                     })
                 } else {
                     setFilterTarget(this.step, this.filter, null, self.model, function(){
-                        self.filter.targetModel.selectedItem = { value: null, name: '' };
                         self.setQueryText();
                     });
                 }
@@ -258,8 +247,6 @@
                 if (this.filter.propertyModel.selectedItem && this.filter.propertyModel.selectedItem.type === "d") {
                     this.filter.targetModel.maxDate = (this.filter.equationModel.selectedItem.value === ">=") ? moment().subtract(1, 'days').toDate() : moment().add(1, 'days').toDate();
                 }
-                this.filter.targetModel.selectedItem = { value: null, name: '' };
-                checkCustomOperators(this.filter, item.value);
                 this.setQueryText();
             },
             onTargetValueChanged: function (e) {
@@ -273,11 +260,6 @@
             },
             onFilterSearch: function (key) {
                 var self = this;
-                
-                var selectedValue = null;
-                if (self.filter.targetModel.selectedItem && self.filter.targetModel.selectedItem.value !== undefined && self.filter.targetModel.selectedItem.value !== null) {
-                    selectedValue = self.filter.targetModel.selectedItem.value;
-                }
 
                 //Set selected event for segmentation filter if it's different than selected event
                 if (this.step.selectedEvent.value !== countlySegmentation.getEvent()) {
@@ -285,14 +267,14 @@
                         countlySegmentation.getBigListMetaData(
                             self.filter.propertyModel.selectedItem.value,
                             key,
-                            setTargetModelItems.bind(this, self.filter, selectedValue)
+                            setTargetModelItems.bind(this, self.filter, null)
                         );
-                    });
+                    })
                 } else {
                     countlySegmentation.getBigListMetaData(
                         this.filter.propertyModel.selectedItem.value,
                         key,
-                        setTargetModelItems.bind(this, this.filter, selectedValue)
+                        setTargetModelItems.bind(this, this.filter, null)
                     );
                 }
             },
@@ -308,6 +290,7 @@
                 if (!this.filter.propertyModel.selectedItem)
                     return this.filter.equationModel.items;
                 else {
+
                     var currentFilter = this.filter;
                     var isRegexAllowed = countlySegmentation.isFieldRegexable(this.filter.propertyModel.selectedItem.value, this.filter.propertyModel.selectedItem.type);
                     if (isRegexAllowed) {
@@ -320,19 +303,11 @@
                          }
                       });
                     }
-                    var self = this;
 
                     var selectedType = this.filter.propertyModel.selectedItem.type;
                     return this.filter.equationModel.items.filter(function (filter) {
                       if (filter.value === "contains"){
                         return isRegexAllowed;
-                      }
-                      if (currentFilter.propertyModel.selectedItem && filter.value === "isset"){
-                        return (
-                            !self.model.staticProperties.isStatic(currentFilter.propertyModel.selectedItem.value) 
-                            && currentFilter.propertyModel.selectedItem.value != "chr"
-                            && !doesOperatorRepeat(currentFilter, self.step.filters, currentFilter.propertyModel.selectedItem.value, "isset")
-                        );
                       }
                       return filter.dataTypes.includes(selectedType)
                     });
@@ -341,40 +316,16 @@
             propertyItems: function () {
                 var filter = this.filter;
                 var regexFields = [];
-                var includeCohorts = "";
                 this.step.filters.forEach(function(otherFilter){
-                    if (otherFilter.propertyModel.selectedItem && otherFilter.equationModel.selectedItem.value === "contains"){
-                        regexFields.push(otherFilter.propertyModel.selectedItem.value);
-                    }
-                    if(otherFilter.andOrModel && otherFilter.andOrModel.prevSelectedProperty.value === "chr"){
-                        if (otherFilter.andOrModel.selectedItem.value === "and") {
-                            includeCohorts = "and";
-                        }
-                        else if (otherFilter.andOrModel.selectedItem.value === "or") {
-                            includeCohorts = "or";
-                        }
-                    }
+                  if (otherFilter.propertyModel.selectedItem && otherFilter.equationModel.selectedItem.value === "contains"){
+                    regexFields.push(otherFilter.propertyModel.selectedItem.value);
+                  }
                 });
-                var isUserSegmentation = this.model.isUserSegmentation;
-                var queryBuilderType = this.model.queryBuilderType;
-
                 return filter.propertyModel.items.filter(function (item) {
-                    if (queryBuilderType === "cohorts" && !isUserSegmentation && item.value === "chr"){
-                        return false;
-                    }
                     if (!filter.andOrModel)
                         return true;
                     if (regexFields.indexOf(item.value)!=-1){
                       return false;
-                    }
-                    //Cohorts can either have AND or OR not both
-                    if (item.value === "chr") {
-                        if (includeCohorts !== filter.andOrModel.selectedItem.value) {
-                            return false;
-                        }
-                        else {
-                            return true;
-                        }
                     }
                     if (filter.andOrModel.selectedItem.value === "and")
                         return filter.andOrModel.prevSelectedProperty.value !== item.value;
@@ -419,24 +370,6 @@
                     return true;
                 }
                 return false;
-            },
-            isSegmentationDisabled: function () {
-                var step = this.model.step;
-                if (step.filters.length > 0) {
-                    var prevFilter = step.filters[step.filters.length - 1];
-                    if (prevFilter) {
-                        if ((prevFilter.propertyModel.selectedItem && !prevFilter.propertyModel.selectedItem.value) || (prevFilter.targetModel && !prevFilter.targetModel.selectedItem.value)) {
-                            return true;
-                        }
-                        else {
-                            return false;
-                        }    
-                    } else {
-                        return true;
-                    }    
-                } else {
-                    return true;
-                }
             }
         }
     };
@@ -468,15 +401,11 @@
         },
         computed: {
             stepName: function () {
-                var stepNameKey = this.$parent.$parent.$parent.stepNameKey;
-                return jQuery.i18n.prop(stepNameKey, this.$parent.$parent.$parent.steps.indexOf(this.step) + 1)
+                var stepNameKey = this.$parent.$parent.stepNameKey;
+                return jQuery.i18n.prop(stepNameKey, this.$parent.$parent.steps.indexOf(this.step) + 1)
             },
             isRemoveVisible: function () {
-                var hasUserSeg = false;
-                if (this.$parent.$parent.$parent.$parent && this.$parent.$parent.$parent.$parent.$children && this.$parent.$parent.$parent.$parent.$children.length>1){
-                    hasUserSeg = this.$parent.$parent.$parent.$parent.$children[0].step.filters.length>0;
-                }
-                return this.$parent.$parent.$parent.steps.indexOf(this.step) > 0 || hasUserSeg;
+                return this.$parent.$parent.steps.indexOf(this.step) > 0
             }
         },
         methods: {
@@ -505,25 +434,24 @@
     // <step-row></step-row>
     var stepRow = {
         props: ['step'],
-        data: function () { return { state: 'step', tOut: null, model: this.$parent.$parent } },
+        data: function () { return { state: 'step', tOut: null, model: this.$parent } },
         components: {
             "conditional-range-row": conditionRangeRow,
             "segmentational-row": segmentationRow
         },
         computed: {
             isThenVisible: function () {
-                return this.$parent.$parent.steps.indexOf(this.step) < (this.$parent.$parent.steps.length - 1);
+                return this.$parent.steps.indexOf(this.step) < (this.$parent.steps.length - 1);
             }
         },
         methods: {
             removeStep: function () {
                 this.state = 'undo';
                 this.step.isRemoved = true;
-                this.$parent.$parent.$emit('query_changed');
+                this.$parent.$emit('query_changed');
                 var self = this;
                 this.tOut = setTimeout(function () {
-                    self.state = 'step';
-                    self.$parent.$parent.steps.splice(self.$parent.$parent.steps.indexOf(self.step), 1);
+                    self.$parent.steps.splice(self.$parent.steps.indexOf(self.step), 1);
                 }, 2000)
             },
             onUndo: function () {
@@ -531,7 +459,7 @@
                     clearTimeout(this.tOut);
                     this.state = 'step';
                     this.step.isRemoved = false;
-                    this.$parent.$parent.$emit('query_changed');
+                    this.$parent.$emit('query_changed');
                 }
             }
         },
@@ -655,16 +583,10 @@
         computed: {
             headerText: function () { return jQuery.i18n.map[this.headerTextKey] },
             addConditionIsDisabled : function () {
-                if (this.queryBuilderType == "funnels") {
-                    var limit = countlyGlobal.funnel_step_limit || 8;
-                    return this.steps.length >= limit
-                } else if (this.queryBuilderType === "cohorts") {
-                    for (var i = 0; i < this.steps.length; i++) {
-                        var step = this.steps[i];
-                        if (!step.selectedBehavior || !step.selectedPeriod) return true;
-                    }
+                if (this.queryBuilderType !== "funnels")
                     return false;
-                }
+                var limit = countlyGlobal.funnel_step_limit || 8;
+                return this.steps.length >= limit
             }
         }
     };
@@ -673,7 +595,7 @@
         template: '#user-property-segmentation-template',
         components: { "user-segmentation-step" : userSegmentationStepRow},
         computed : {
-            headerText : function(){ return "USER PROPERTY SEGMENTATION"}
+            headerText : function(){ return "用户基础属性"}
         },
         data : function(){
             var step = newStep("cohorts");
@@ -693,8 +615,7 @@
                 { name: jQuery.i18n.map['drill.opr.at-most'],  value: '<=', dataTypes: ['s', 'n', 'd'] },
                 { name: jQuery.i18n.map['drill.opr.is'],    value: '=', dataTypes: ['s', 'n', 'l', 'bl'] },
                 { name: jQuery.i18n.map['drill.opr.is-not'], value: '!=', dataTypes: ['s', 'n', 'l', 'bl'] },
-                { name: jQuery.i18n.map['drill.opr.contains'], value: 'contains', dataTypes: ['s', 'l', 'bl'] },
-                { name: jQuery.i18n.map['drill.opr.is-set'], value: 'isset', dataTypes: ['s', 'n', 'd', 'l', 'bl'] }],
+                { name: jQuery.i18n.map['drill.opr.contains'],     value: 'contains', dataTypes: ['s', 'l', 'bl'] }],
                 andOrItems: [{ name: jQuery.i18n.map['drill.and'], value: 'and' }, { name: jQuery.i18n.map['drill.or'], value: 'or' }],
                 isUserSegmentation: true,
                 staticProperties: new StaticPropertyManager("user-properties")
@@ -766,62 +687,40 @@
 
     //Private Functions
     function setFilterTarget(step, filter, selectedValue, model, callback) {
-        var customTarget = filter.equationModel.selectedItem.value == "contains" || filter.equationModel.selectedItem.value == "isset";
-
         if (filter.propertyModel.selectedItem.type === "l") {
             if (model.staticProperties && model.staticProperties.isStatic(filter.propertyModel.selectedItem.value)){
                 filter.targetModel.items = model.staticProperties.getStaticFilterPairs(filter.propertyModel.selectedItem.value);
             } else {
                 var filterValues = countlySegmentation.getFilterValues(filter.propertyModel.selectedItem.value);
                 var filterNames = countlySegmentation.getFilterNames(filter.propertyModel.selectedItem.value);
-                if (Object.prototype.toString.call(filterValues) === '[object Array]') {
-                    filter.targetModel.items = filterValues.reduce(function (list, value, index) {
-                        list.push({
-                            name: filterNames[index],
-                            value: value
-                        });
-                        return list;
-                    }, []);
-                }
-                else if(filterValues){
-                    filter.targetModel.items = filter.targetModel.items || [];
-                    for (var key in filterValues) {
-                        filter.targetModel.items = filter.targetModel.items.concat(filterValues[key].reduce(function (list, value, index) {
-                            list.push({
-                                name: filterNames[index],
-                                value: value
-                            });
-                            return list;
-                        }, []));
-                    }
-                }
+                filter.targetModel.items = filterValues.reduce(function (list, value, index) {
+                    list.push({
+                        name: filterNames[index],
+                        value: value
+                    });
+                    return list;
+                }, []);
             }
             
-	        if (customTarget) {
-                filter.targetModel.selectedItem = { value: selectedValue || null, text: selectedValue || null };
-            } else {
+	        if (filter.equationModel.selectedItem.value!="contains") {
                 filter.targetModel.selectedItem = selectedValue ? filter.targetModel.items.find(function (item) { return item.value === selectedValue }) : { value: null, text: null };
+            } else {
+                filter.targetModel.selectedItem = { value: selectedValue || null, text: selectedValue || null };
             }
-            checkCustomOperators(filter, filter.equationModel.selectedItem.value);
             callback();
-        } else if (!customTarget && filter.propertyModel.selectedItem.type === "bl") {
+        } else if (filter.equationModel.selectedItem.value!="contains" && filter.propertyModel.selectedItem.type === "bl") {
             countlySegmentation.getBigListMetaData(filter.propertyModel.selectedItem.value, null, function(values, names){
                 if(!selectedValue || values.indexOf(selectedValue) >= 0){
                     setTargetModelItems(filter, selectedValue, values, names)
-                    checkCustomOperators(filter, filter.equationModel.selectedItem.value);
-                    callback();
-                }
-                else{
+                }else{
                     countlySegmentation.getBigListMetaData(filter.propertyModel.selectedItem.value, selectedValue, function(searchValues, searchNames){
                         setTargetModelItems(filter, selectedValue, values.concat(searchValues), names.concat(searchNames));
-                        checkCustomOperators(filter, filter.equationModel.selectedItem.value);
-                        callback();
                     })
                 }
+                callback();
             });
         } else {
             filter.targetModel.selectedItem = { value: selectedValue || null, text: selectedValue || null };
-            checkCustomOperators(filter, filter.equationModel.selectedItem.value);
             callback();
         }
     };
@@ -855,11 +754,6 @@
             }
           }
         }
-        
-        if (selectedProperty && selectedProperty.indexOf("chr.") === 0) {
-            selectedProperty = "chr";
-        }
-        
         var filter = {
             propertyModel: {
                 placeholder: jQuery.i18n.map['drill.select-property'],
@@ -898,47 +792,6 @@
         
     };
 
-    function checkCustomOperators(filter, operator) {
-        if (operator === 'isset') {
-            if (filter.targetModel.items && 
-                (filter.propertyModel.selectedItem.type === "l" || filter.propertyModel.selectedItem.type === "bl")) {
-                filter.targetModel._swappedItems = filter.targetModel.items;
-            }
-            filter.targetModel.items = [
-                { name: jQuery.i18n.map["drill.opr.is-set-true"], value: '1' },
-                { name: jQuery.i18n.map["drill.opr.is-set-false"], value: '0' }
-            ];
-
-            if (filter.targetModel.selectedItem && filter.targetModel.selectedItem.value !== null){
-                if (filter.targetModel.selectedItem.value === "1"){
-                    filter.targetModel.selectedItem.text = jQuery.i18n.map["drill.opr.is-set-true"];
-                } else if (filter.targetModel.selectedItem.value === "0") {
-                    filter.targetModel.selectedItem.text = jQuery.i18n.map["drill.opr.is-set-false"];
-                }
-            }
-            
-        }
-        else{
-            if (filter.targetModel._swappedItems && 
-                (filter.propertyModel.selectedItem.type === "l" || filter.propertyModel.selectedItem.type === "bl")) {
-                filter.targetModel.items = filter.targetModel._swappedItems;
-                filter.targetModel._swappedItems = null;
-            }
-        }
-    }
-
-    function doesOperatorRepeat(currentStep, steps, property, operator){
-        var found = false;
-        for (var i=0;i<steps.length && !found;i++) {
-            var step = steps[i];
-            if (currentStep == step || !step.propertyModel.selectedItem) {
-                continue;
-            }
-            found = step.propertyModel.selectedItem.value == property && step.equationModel.selectedItem.value == operator;
-        }
-        return found;
-    }
-
     function switchEquationTextToVal(text) {
         switch (text) {
             case "=":
@@ -955,8 +808,6 @@
                 return "$lte";
             case "contains":
                 return "rgxcn";
-            case "isset":
-                return "pseset";
         }
     };
 
@@ -976,8 +827,6 @@
                 return "<=";
             case "rgxcn":
                 return "contains";
-            case "pseset": 
-                return "isset";
         }
     };
 
@@ -1076,16 +925,8 @@
     function createQueryFromFilters(filters){
         var query = {};
         var queryText = "";
-        var cohortLink = "or";
-        var prefilter = filters.filter(function (filter) { return !filter.isRemoved });
 
-        prefilter.forEach(function (filter) {
-            if (filter.propertyModel.selectedItem && filter.propertyModel.selectedItem.value === "chr" && filter.andOrModel) {
-                cohortLink = filter.andOrModel.selectedItem.value;
-            }
-        });
-        
-        prefilter.forEach(function (filter) {
+        filters.filter(function (filter) { return !filter.isRemoved }).forEach(function (filter) {
             if (!filter.propertyModel.selectedItem) {
                 return;
             }
@@ -1094,35 +935,15 @@
             query[property] = query[property] || {};
             queryText += filter.queryText + " ";
 
-            var hasCustomOperator = filter.equationModel.selectedItem.value === "contains" || filter.equationModel.selectedItem.value === "isset";
-
             if (filter.equationModel.selectedItem.value === "=" || filter.equationModel.selectedItem.value === "!=") {
-                if (filter.propertyModel.selectedItem.value === "chr" && cohortLink !== "or") {
-                    if (filter.equationModel.selectedItem.value == "!="){
-                        query["chr." + filter.targetModel.selectedItem.value] = "false";
-                    }
-                    else{
-                        query["chr." + filter.targetModel.selectedItem.value] = "true";
-                    }
-                    delete query[property];
-                }
-                else {
-                    query[property][equation] = query[property][equation] || [];
-                    if (filter.propertyModel.selectedItem.type === "n" || filter.propertyModel.selectedItem.type === "d" || (filter.propertyModel.selectedItem.value.indexOf("custom.") === 0 && $.isNumeric(filter.targetModel.selectedItem.value))) {
-                        filter.targetModel.selectedItem.value = parseFloat(filter.targetModel.selectedItem.value);
-                    }
-                    query[property][equation].push(filter.targetModel.selectedItem.value);
-                }
-            } else if (hasCustomOperator) {
+                query[property][equation] = query[property][equation] || [];
+                query[property][equation].push(filter.targetModel.selectedItem.value)
+            } else if (filter.equationModel.selectedItem.value === "contains") {
                 query[property][equation] = [filter.targetModel.selectedItem.value];
             } else {
-                if (filter.propertyModel.selectedItem.type === "n" || filter.propertyModel.selectedItem.type === "d" || (filter.propertyModel.selectedItem.value.indexOf("custom.") === 0 && $.isNumeric(filter.targetModel.selectedItem.value))) {
-                    filter.targetModel.selectedItem.value = parseFloat(filter.targetModel.selectedItem.value);
-                }
                 query[property][equation] = filter.targetModel.selectedItem.value;
             }
         });
-        
         queryText = queryText.trim();
 
         return {
@@ -1134,25 +955,20 @@
     function getFilterArray(query){
         var result = [];
         Object.keys(query).forEach(function (key) {
-            if (key.indexOf("chr.") === 0) {
-                result.push({selectedProperty : key, selectedEquation : (query[key] === "true") ? "$in" : "$nin", selectedValue : key.replace("chr.", "")});
-            }
-            else {
-                var selectedProperty = key;
-                Object.keys(query[key]).forEach(function (subKey) {
-                    var selectedEquation = subKey;
-                    if (Array.isArray(query[key][subKey])) {
-                        query[key][subKey].forEach(function (value) {
-                            var selectedValue = value;
-                            result.push({selectedProperty : selectedProperty, selectedEquation : selectedEquation, selectedValue : selectedValue})
-                        })
-                    } else {
-                        var selectedValue = query[key][subKey];
+            var selectedProperty = key;
+            Object.keys(query[key]).forEach(function (subKey) {
+                var selectedEquation = subKey;
+                if (Array.isArray(query[key][subKey])) {
+                    query[key][subKey].forEach(function (value) {
+                        var selectedValue = value;
                         result.push({selectedProperty : selectedProperty, selectedEquation : selectedEquation, selectedValue : selectedValue})
-                    }
-    
-                });
-            }
+                    })
+                } else {
+                    var selectedValue = query[key][subKey];
+                    result.push({selectedProperty : selectedProperty, selectedEquation : selectedEquation, selectedValue : selectedValue})
+                }
+
+            })
         });
 
         return result;
@@ -1214,8 +1030,7 @@
             { name: jQuery.i18n.map['drill.opr.at-most'],      value: '<=', dataTypes: ['s', 'n', 'd'] },
             { name: jQuery.i18n.map['drill.opr.is'],           value: '=', dataTypes: ['s', 'n', 'l', 'bl'] },
             { name: jQuery.i18n.map['drill.opr.is-not'],       value: '!=', dataTypes: ['s', 'n', 'l', 'bl'] },
-            { name: jQuery.i18n.map['drill.opr.contains'],     value: 'contains', dataTypes: ['s', 'l', 'bl'] },
-            { name: jQuery.i18n.map['drill.opr.is-set'],       value: 'isset', dataTypes: ['s', 'n', 'd', 'l', 'bl'] }],
+            { name: jQuery.i18n.map['drill.opr.contains'],     value: 'contains', dataTypes: ['s', 'l', 'bl'] }],
             andOrItems: [{ name: jQuery.i18n.map['drill.and'], value: 'and' }, { name: jQuery.i18n.map['drill.or'], value: 'or' }],
             steps: [],
             staticProperties: new StaticPropertyManager("query-builder")

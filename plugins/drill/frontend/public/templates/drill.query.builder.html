@@ -52,7 +52,7 @@
                             <span v-if="isThenVisible" v-text="model.labels.thenText"></span>
                         </div>
                     </div>
-                    <div v-if="state === 'undo'" class="undo-row"><span v-text="model.labels.removeRow"></span> <a href="#" v-on:click.prevent="onUndo">Undo</a></div>
+                    <div v-if="state === 'undo'" class="undo-row"><span v-text="model.labels.removeRow"></span> <a href="#" v-on:click.prevent="onUndo">撤销</a></div>
                 </div>
             </step-row>
             <div class="add-condition-row">
@@ -68,7 +68,7 @@
                 <user-segmentation-step inline-template v-bind:step="step">
                     <segmentational-row inline-template v-bind:step="step">
                         <div class="segmentation-row" style="padding-left:0px;display:table;width:100%">
-                            <div style="width:110px; display:table-cell; font-weight:300;line-height:2;color:#636363;vertical-align:top;padding-top:6px">Users with</div>
+                            <div style="width:110px; display:table-cell; font-weight:300;line-height:2;color:#636363;vertical-align:top;padding-top:6px">用户</div>
                             <div style="width:auto;display:table-cell;vertical-align:middle">
                                 <div class="segment-row">
                                         <div class="text-dark-gray" v-if="!isUserSegmentation && step.filters.length > 0" style="font-weight:500" v-text="model.labels.whicHas"></div>

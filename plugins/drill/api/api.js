@@ -143,9 +143,17 @@ const log = require('../../../api/utils/log.js')('drill:api');
                 let collection = "drill_meta" + appId;
                 let metaId = "meta_" + crypto.createHash('sha1').update(event + appId).digest('hex');
 
-                common.drillDb.collection(collection).findOne({'_id': metaId}, {_id:0}, function(err, meta) {
+                common.drillDb.collection(collection).findOne({'_id': 'meta_up'}, {_id:0}, function(err, meta) {
                     if (!err && meta) {
-                        common.returnOutput(params, meta || {});
+                        common.drillDb.collection(collection).findOne({'_id': metaId}, {sg: 1, e: 1}, 
+                            function(error, eMeta) {
+                                if (!error && eMeta) {
+                                    meta.e = eMeta.e;
+                                    meta.sg = eMeta.sg;
+                                }
+                                common.returnOutput(params, meta || {});
+                                
+                        });
                     } else {
                         common.returnOutput(params, []);
                     }
@@ -344,12 +352,87 @@ const log = require('../../../api/utils/log.js')('drill:api');
         return true;
     });
 
-    plugins.register("/plugins/drill", function(ob) {
-        let params = ob.params;
-        log.d("plugins/drill: " + params.app_id);
+    plugins.register("/i/apps/create", function(ob) {
+        var appId = ob.appId;
+        common.drillDb.collection('drill_event' + appId).ensureIndex({device_id: 1}, function() {});
+        common.drillDb.collection('drill_event' + appId).ensureIndex({uid: 1}, function() {});
+        common.drillDb.collection('drill_event' + appId).ensureIndex({ts: 1}, function() {});
     });
 
-    this.drillOmitSegments = ['phone_num'];
+    plugins.register("/i/apps/delete", function(ob) {
+        var appId = ob.appId;
+        common.drillDb.collection('drill_meta' + appId).remove({'_id': 'meta_up'}, function() {});
+        deleteDrill(appId);
+    });
+
+    plugins.register("/i/apps/reset", function(ob) {
+        var appId = ob.appId;
+        common.drillDb.collection('drill_meta' + appId).remove({'_id': 'meta_up'}, function() {});
+        deleteDrill(appId);
+    });
+
+    plugins.register("/i/apps/clear_all", function(ob) {
+        var appId = ob.appId;
+        common.drillDb.collection('drill_meta' + appId).remove({'_id': 'meta_up'}, function() {});
+        deleteDrill(appId);
+    });
+
+    plugins.register("/i/apps/clear", function(ob) {
+        var appId = ob.appId;
+        common.drillDb.collection('drill_meta' + appId).remove({'_id': 'meta_up'}, function() {});
+        deleteDrill(appId);
+    });
+
+    plugins.register("/plugins/drill", function(ob) {
+        // let params = ob.params;
+        // log.d("plugins/drill: " + params.app_id);
+    });
+
+    plugins.register("/session/duration", function(ob) {
+        return new Promise(function(resolve) {
+            var params = ob.params;
+            var appUser = params.app_user;
+            let sessionDur = params.qstring.session_duration;
+
+            if (sessionDur) {
+                let events = [];
+                let event = {};
+                event.key = "[CLY]_session";
+                event.count = 1;
+                event.sum = 0;
+                event.dur = parseInt(sessionDur);
+                events.push(event);
+                processMeta(params, events, appUser, resolve);
+                proSessionEvent(params, event, appUser, resolve);
+            } else {
+                resolve();
+            }
+        });
+    })
+
+    plugins.register("/session/end", function(ob){
+        return new Promise(function(resolve) {
+            var params = ob.params;
+            var appUser = ob.dbAppUser;
+            let sessionDur = params.qstring.session_duration;
+            if (sessionDur) {
+                sessionDur = parseInt(sessionDur);
+            } else {
+                resolve();
+            }
+            let collectionName = "drill_events" + crypto.createHash('sha1').update("[CLY]_session" + params.app_id).digest('hex');
+            let update = {'$set': {}};
+            
+            common.drillDb.collection(collectionName).findOne({'did': params.qstring.device_id, 'uid': appUser.uid}, {_id: 1, dur: 1}, function(err, result) {
+                if (!err && result) {
+                    update.$set['dur'] = result.dur + sessionDur;
+                    common.drillDb.collection(collectionName).update({'_id': result._id}, update, {'upsert': true}, function() {});
+                }
+                resolve();
+            });
+            
+        });
+    });
 
     /**
     * Process segments from params
@@ -358,10 +441,10 @@ const log = require('../../../api/utils/log.js')('drill:api');
     * @param {function} done - callback function to call when done processing
     **/
     function processMeta(params, appEvents, appUser, done) {
-        var forbiddenSegValues = [];
-        for (let i = 0; i < 32; i++) {
-            forbiddenSegValues.push(i + "");
-        }
+        // var forbiddenSegValues = [];
+        // for (let i = 0; i < 32; i++) {
+        //     forbiddenSegValues.push(i + "");
+        // }
         let metaToFetch = {};
         let incomingEvents = [];
         for (let i = 0; i < appEvents.length; i++) {
@@ -384,14 +467,6 @@ const log = require('../../../api/utils/log.js')('drill:api');
             if (currEvent.segmentation) {
                 let j = 0;
                 for (var segKey in currEvent.segmentation) {
-                    /**
-                     * type决定在钻取查询的时候值输入框的显示类型
-                     * l: 代表List
-                     * d: 代表日期
-                     * n: 代表数字
-                     * s: 代表字符串
-                     */
-                    let type = 'l';
                     //check if segment should be ommited
                     if (plugins.internalOmitSegments[currEvent.key] && Array.isArray(plugins.internalOmitSegments[currEvent.key]) && 
                             plugins.internalOmitSegments[currEvent.key].indexOf(segKey) !== -1) {
@@ -407,14 +482,45 @@ const log = require('../../../api/utils/log.js')('drill:api');
                     // Mongodb field names can't start with $ or contain .
                     tmpSegVal = tmpSegval.replace(/^\$/, "").replace(/\./g, ":");
 
-                    if (forbiddenSegValues.indexOf(tmpSegval) !== -1) {
-                        tmpSegval = "[CLY]" + tmpSegVal;
-                    }
-
-                    if (drillOmitSegments.indexOf(segKey) !== -1) {
-                        log.d("meta properties parse to null: " + segKey);
-                        tmpSegval = "";
-                        type = 's';
+                    // if (forbiddenSegValues.indexOf(tmpSegval) !== -1) {
+                    //     tmpSegval = "[CLY]" + tmpSegVal;
+                    // }
+                    let type = 's';
+                    if ('[CLY]_view' === shortEventName) {
+                        if (segKey === 'bounce' || segKey === 'exit' || segKey === 'name' || segKey === 'segment'
+                            || segKey === 'start') {
+                            type = 'l';
+                        } else if (segKey === 'visit') {
+                            type = 'n';
+                        }
+                    } else if ('[CLY]_action' === shortEventName) {
+                        if (segKey === 'domain' || segKey === 'type' || segKey === 'view') {
+                            type = 'l';
+                        } else if (segKey === 'height' || segKey === 'width' || segKey === 'x' || segKey === 'y') {
+                            type = 'n';
+                        }
+                    } else if ('[CLY]_start_rating' === shortEventName){
+                        if (segKey === 'platform') {
+                            type = 'l';
+                        } else if (segKey === 'app_version' || segKey === 'rating') {
+                            type = 'n';
+                        }
+                    } else if ('[CLY]_crashes' === shortEventName) {
+                        if (segKey === 'app_version' || segKey === 'background' || segKey === 'cpu' || segKey === 'muted' 
+                            || segKey === 'nonfatal' || segKey === 'online' || segKey === 'opengl' || segKey === 'orientation' 
+                            || segKey === 'os' || segKey === 'root' || segKey === 'signal') {
+                            type = 'l';
+                        } else if (segKey === 'bat_current' || segKey === 'bat_total' || segKey === 'chartboost' 
+                            || segKey === 'disk_current' || segKey === 'disk_total' || segKey === 'ram_current' 
+                            || segKey === 'ram_total' || segKey === 'run' || segKey === 'gideros') {
+                            type = 'n';
+                        }
+                    } else {
+                        if (common.isNumber(segKey)) {
+                            type = 'n';
+                        } else if (typeof segKey === 'boolean') {
+                            type = 'l'
+                        }
                     }
 
                     metaToFetch[j] = {
@@ -427,6 +533,14 @@ const log = require('../../../api/utils/log.js')('drill:api');
                 }
             }
             common.arrayAddUniq(incomingEvents, shortEventName);
+
+            let id = "meta_" + crypto.createHash('sha1').update(shortEventName + params.app_id).digest('hex');
+            let drill_meta = {'$set': {}};
+            // drill_meta.$set['up'] = appUser;
+            drill_meta.$set['type'] = 'e';
+            drill_meta.$set['app_id'] = params.app_id;
+            drill_meta.$set['e'] = shortEventName;
+            common.drillDb.collection("drill_meta" + params.app_id).update({'_id': id}, drill_meta, {'upsert': true}, function() {});
         }
         
         if (Object.keys(metaToFetch).length == 0) {
@@ -437,24 +551,19 @@ const log = require('../../../api/utils/log.js')('drill:api');
         async.map(Object.keys(metaToFetch), fetchEventMeta, function(err, eventMetaDocs) {
             for(let i = 0; i < eventMetaDocs.length; i++) {
                 let meta = eventMetaDocs[i];
-                if (meta) {
+                if (meta && meta.type === 'l') {
                     common.arrayAddUniq(meta.values, metaToFetch[i].value);
-                } else { //TODO: value common if key exist, continue. reduce db operate.
+                } else {
                     meta = {};
-                    meta.values = [metaToFetch[i].value];
+                    // meta.values = [metaToFetch[i].value];
                 }
                 meta.type = metaToFetch[i].type;
                 let id = "meta_" + crypto.createHash('sha1').update(metaToFetch[i].eventName + params.app_id).digest('hex');
                 let update = {'$set': {}};
                 update.$set['sg.' + metaToFetch[i].key] = meta;
-                update.$set['app_id'] = params.app_id;
-                update.$set['e'] = metaToFetch[i].eventName;
                 common.drillDb.collection("drill_meta" + params.app_id).update({'_id': id}, update, {'upsert': true}, function() {});
             }
-
-            for(let i = 0; i < incomingEvents.length; i++) {
-                processUser(appUser, params.app_id, incomingEvents[i]);
-            }
+            processMetaUp(appUser, params.app_id);
         });
 
         /**
@@ -486,12 +595,12 @@ const log = require('../../../api/utils/log.js')('drill:api');
         var tmpEventObj = {},
             tmpEventColl = [],
             shortEventName = {},
-            forbiddenSegValues = [],
+            // forbiddenSegValues = [],
             eventCollectionName = {};
 
-        for (let i = 0; i < 32; i++) {
-            forbiddenSegValues.push(i + "");
-        }
+        // for (let i = 0; i < 32; i++) {
+        //     forbiddenSegValues.push(i + "");
+        // }
 
         for (let i = 0; i < appEvents.length; i++) {
             var currEvent = appEvents[i];
@@ -517,9 +626,11 @@ const log = require('../../../api/utils/log.js')('drill:api');
                 tmpEventObj[common.dbUserMap.device_id] = params.qstring.device_id;
             }
 
-            if (params.app_user_id) {
-                tmpEventObj[common.dbUserMap.user_id] = params.app_user_id;
-            }
+            // if (appUser.uid) {
+                // tmpEventObj[common.dbUserMap.user_id] = appUser.uid;
+                // delete appUser.uid;
+                // delete appUser._id;
+            // }
 
             let time = params.time;
             tmpEventObj[common.dbEventMap.timestamp] = time.mstimestamp;
@@ -564,30 +675,20 @@ const log = require('../../../api/utils/log.js')('drill:api');
                     // Mongodb field names can't start with $ or contain .
                     tmpSegVal = tmpSegval.replace(/^\$/, "").replace(/\./g, ":");
 
-                    if (forbiddenSegValues.indexOf(tmpSegval) !== -1) {
-                        tmpSegval = "[CLY]" + tmpSegVal;
-                    }
+                    // if (forbiddenSegValues.indexOf(tmpSegval) !== -1) {
+                    //     tmpSegval = "[CLY]" + tmpSegVal;
+                    // }
 
                     currEvent.segmentation[segKey] = tmpSegval;
                 }
 
                 tmpEventObj[common.dbEventMap.segmentations] = currEvent.segmentation;
             }
-
-            let up = {};
-            up[common.dbUserMap.first_seen] = appUser[common.dbUserMap.first_seen];
-            up[common.dbUserMap.last_seen] = appUser[common.dbUserMap.last_seen];
-            up[common.dbUserMap.total_session_duration] = appUser[common.dbUserMap.total_session_duration];
-            up[common.dbUserMap.session_count] = appUser[common.dbUserMap.session_count];
-            up[common.dbUserMap.device] = appUser[common.dbUserMap.device];
-            up[common.dbUserMap.city] = appUser[common.dbUserMap.city];
-            up[common.dbUserMap.country_code] = appUser[common.dbUserMap.country_code];
-            up[common.dbUserMap.platform] = appUser[common.dbUserMap.platform];
-            up[common.dbUserMap.platform_version] = appUser[common.dbUserMap.platform_version];
-            up[common.dbUserMap.app_version] = appUser[common.dbUserMap.app_version];
-            up[common.dbUserMap.carrier] = appUser[common.dbUserMap.carrier];
-            up[common.dbUserMap.resolution] = appUser[common.dbUserMap.resolution];
-            tmpEventObj.up = up;
+            if (appUser._id) {
+                delete appUser._id;
+            }
+            tmpEventObj.up = appUser;
+            tmpEventObj[common.dbUserMap.user_id] = appUser.uid;
 
             tmpEventObj.coll = eventCollectionName;
             tmpEventObj.cd = new Date();
@@ -597,46 +698,57 @@ const log = require('../../../api/utils/log.js')('drill:api');
         for(let i = 0; i < tmpEventColl.length; i++) {
             var collectionName = tmpEventColl[i].coll;
             delete tmpEventColl[i].coll;
-            common.drillDb.collection(collectionName).update({'ts': tmpEventColl[i].ts}, {$set: tmpEventColl[i]}, {'upsert': true}, function() {});
+            // common.drillDb.collection(collectionName).update({'_id': params.app_id}, {$set: tmpEventColl[i]}, {'upsert': true}, function() {});
+            common.drillDb.collection(collectionName).insert(tmpEventColl[i], function(){});
         }
         done();
     }
 
-    function processUser(appUser, appId, eventName) {
-        delete appUser._id;
-        async.map(Object.keys(appUser), fetchEventUser, function(err, userMetaDocs) {
+    function processMetaUp(appUser, appId) {
+        let id = "meta_up";
+        let update = {'$set': {}};
+        update.$set['app_id'] = appId;
+        update.$set['type'] = 'up';
+
+        async.map(Object.keys(appUser), fetchUpItem, function(err, userMetaDocs) {
             for(let i = 0; i < userMetaDocs.length; i++) {
                 let meta = userMetaDocs[i];
                 let key = meta.key;
-                if (meta.values) {
-                    common.arrayAddUniq(meta.values, appUser[key]);
+                if (common.dbUserMap.first_seen === key || common.dbUserMap.last_seen === key) {
+                    meta.type = 'd'
+                } else if (common.dbUserMap.app_version === key || common.dbUserMap.carrier === key 
+                    || common.dbUserMap.country_code === key || common.dbUserMap.device === key || 'dnst' === key 
+                    || 'dow' === key || 'gender' === key || 'hour' === key || 'la' === key || common.dbUserMap.platform === key 
+                    || common.dbUserMap.platform_version === key || common.dbUserMap.resolution === key || 'src' === key
+                    || 'lv' === key) {
+                    meta.type = 'l'
+                    if (meta.values) {
+                        common.arrayAddUniq(meta.values, appUser[key]);
+                    } else {
+                        meta.values = [appUser[key]];
+                    }
+                } else if ('phone' === key || 'email' === key || 'name' === key || 'organization' === key || 'username' === key) {
+                    meta.type = 's'
+                } else if (common.dbUserMap.city === key || common.dbUserMap.region === key) {
+                    meta.type = 'bl'
                 } else {
-                    meta.values = [appUser[key]];
+                    meta.type = 'n'
                 }
-                delete meta.key;
-
-                meta.type = 'l';
-                let id = "meta_" + crypto.createHash('sha1').update(eventName + appId).digest('hex');
-                let sessionId = "meta_" + crypto.createHash('sha1').update("[CLY]_session" + appId).digest('hex');
-                let update = {'$set': {}};
+                //TODO: CMP, CUSTOM property handle
                 update.$set['up.' + key] = meta;
                 common.drillDb.collection("drill_meta" + appId).update({'_id': id}, update, {'upsert': true}, function() {});
-                
-                update.$set['type'] = common.dbEventMap.user_properties;
-                update.$set['e'] = '[CLY]_session';
-                update.$set['app_id'] = appId;
-                common.drillDb.collection("drill_meta" + appId).update({'_id': sessionId}, update, {'upsert': true}, function() {});
+                delete meta.key;
             }
         });
         
         /**
-        * Fetch event user
-        * @param {string} key - key to of user to fetchEventUser
+        * Fetch user properties item
+        * @param {string} key - key to of up
         * @param {function} callback - for result
         **/
-        function fetchEventUser(key, callback) {
+        function fetchUpItem(key, callback) {
             let coll = "drill_meta" + appId;
-            let metaId = "meta_" + crypto.createHash('sha1').update(eventName + appId).digest('hex');
+            let metaId = "meta_up";
             let projection = {_id: 0, ['up.' + key] : 1};
             common.drillDb.collection(coll).findOne({'_id': metaId}, projection, function(err, meta) {
                 let result = {};
@@ -647,6 +759,74 @@ const log = require('../../../api/utils/log.js')('drill:api');
                 callback(false, result);
             });
         }
+    }
+
+    /**
+    * Process [CLY]_session event from params
+    * @param {params} params - params object
+    * @param {event} event- existing event keys
+    * @param {function} done - callback function to call when done processing
+    **/
+    function proSessionEvent(params, event, appUser, done) {
+        var tmpEventObj = {};
+
+        // Create new collection name for the event
+        let eventCollectionName = "drill_events" + crypto.createHash('sha1').update(event.key + params.app_id).digest('hex');
+
+        if (params.qstring.device_id) {
+            tmpEventObj[common.dbUserMap.device_id] = params.qstring.device_id;
+        }
+
+        if (appUser.uid) {
+            tmpEventObj[common.dbUserMap.user_id] = appUser.uid;
+            delete appUser._id;
+        }
+
+        let time = params.time;
+        tmpEventObj[common.dbEventMap.timestamp] = time.mstimestamp;
+        // 2019.10.20
+        tmpEventObj[common.dbEventMap.day] = time.daily;
+        // 2019.w43
+        tmpEventObj[common.dbEventMap.week] = time.yearly + ".w" + time.weekly;
+        // 2019.m10
+        tmpEventObj[common.dbEventMap.month] = time.yearly + ".m" + time.month;
+        // 2014.10.20.h14
+        tmpEventObj[common.dbEventMap.hour] = time.daily + ".h" + time.hour;
+
+        if (event.sum && common.isNumber(event.sum)) {
+            event.sum = parseFloat(parseFloat(event.sum).toFixed(5));
+            tmpEventObj[common.dbEventMap.sum] = event.sum;
+        }
+
+        if (event.dur && common.isNumber(event.dur)) {
+            event.dur = parseFloat(event.dur);
+            tmpEventObj[common.dbMap.dur] = event.dur;
+        }
+        
+        tmpEventObj[common.dbEventMap.count] = event.count;
+
+        tmpEventObj.up = appUser;
+        tmpEventObj.cd = new Date();
+        common.drillDb.collection(eventCollectionName).findOne({'did': params.qstring.device_id, 'uid': appUser.uid}, {_id: 1, dur: 1, s: 1, c: 1}, function(err, result) {
+            if (!err) {
+                if (result) {
+                    tmpEventObj.dur = result.dur + tmpEventObj.dur;
+                    common.drillDb.collection(eventCollectionName).update({'_id': result._id}, {$set: tmpEventObj}, {'upsert': true}, function(){});
+                } else {
+                    common.drillDb.collection(eventCollectionName).insert(tmpEventObj, function(){});
+                }
+            }
+        });        
+        done();
+    }
+
+
+    function processCMP(key, callback) {
+
+    }
+
+    function processCustom(key, callback) {
+        
     }
 
     function getDateIds(bucket, period) {
@@ -706,6 +886,23 @@ const log = require('../../../api/utils/log.js')('drill:api');
             break;
         }
         return dateIds;
+    }
+
+    /**
+    * Deletes all app's drill events & meta
+    **/
+    function deleteDrill(appId) {
+        common.db.collection('events').findOne({'_id': common.db.ObjectID(appId)}, function(err, events) {
+            if (!err && events && events.list) {
+
+                common.arrayAddUniq(events.list, plugins.internalDrillEvents);
+                for (var i = 0; i < events.list.length; i++) {
+                    var collectionNameWoPrefix = crypto.createHash('sha1').update(events.list[i] + appId).digest('hex');
+                    common.drillDb.collection("drill_events" + collectionNameWoPrefix).drop(function() {});
+                    common.drillDb.collection('drill_meta' + appId).remove({'_id': "meta_" + collectionNameWoPrefix}, function() {});
+                }
+            }
+        });
     }
 
 }(plugin));
