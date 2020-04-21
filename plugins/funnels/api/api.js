@@ -364,7 +364,7 @@ const log = require('../../../api/utils/log.js')('funnels:api');
                                         } else {
                                             log.d(err);
                                         }
-                                        callback(false, result);
+                                        callback(null, result);
                                     })
                                 }
                             })
