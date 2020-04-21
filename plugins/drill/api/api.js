@@ -99,14 +99,27 @@ const log = require('../../../api/utils/log.js')('drill:api');
                 // let phoneTmp = {'sg.phone_num': {$in: ['18927430742']}}
                 // pipeline.push({$match: {$and: [timeObj, phoneTmp]}});
                 pipeline.push({$match: {$and: ands}});
-                let group = {};
-                group['_id'] = "$" + condition;
-                group[common.dbEventMap.count] = { $sum: "$c" };
-                group[common.dbEventMap.sum] = { $sum: "$s" };
-                group[common.dbMap.dur] = { $sum: "$dur" };
-                group[common.dbMap.unique] = { $addToSet: "$uid" };
-                pipeline.push({$group: group});
-                pipeline.push({$sort: {_id: 1}})
+                
+                let uidGroup = {};
+                let UDCondition = {};
+                UDCondition[condition] = "$" + condition;
+                UDCondition['uid'] = "$uid";
+                uidGroup['_id'] = UDCondition;
+                uidGroup[common.dbEventMap.count] = { $sum: "$c" };
+                uidGroup[common.dbEventMap.sum] = { $sum: "$s" };
+                uidGroup[common.dbMap.dur] = { $sum: "$dur" };
+
+                dateGroup = {};
+                let dateCondition = {};
+                dateCondition[condition] = "$_id." + condition;
+                dateGroup['_id'] = dateCondition;
+                dateGroup[common.dbEventMap.count] = { $sum: "$c" };
+                dateGroup[common.dbEventMap.sum] = { $sum: "$s" };
+                dateGroup[common.dbMap.dur] = { $sum: "$dur" };
+                dateGroup[common.dbMap.unique] = { $sum: 1 };
+                pipeline.push({$group: uidGroup});
+                pipeline.push({$group: dateGroup});
+                // pipeline.push({$sort: {_id: 1}})
 
                 common.drillDb.collection(collectionName).aggregate(pipeline, {allowDiskUse: true}, function(err, res) {
                     if (!err && res && res.length > 0) {
@@ -114,11 +127,11 @@ const log = require('../../../api/utils/log.js')('drill:api');
                         let data = {};
                         res.forEach(function(doc) {
                             let item = {};
-                            item[common.dbMap.unique] = doc.u.length;
+                            item[common.dbMap.unique] = doc.u;
                             item[common.dbMap.total] = doc.c;
                             item[common.dbMap.sum] = doc.s;
                             item[common.dbMap.dur] = doc.dur;
-                            data[doc._id] = item;
+                            data[doc._id[condition]] = item;
                         });
                         result["data"] = data;
                         result['app_id'] = params.qstring.app_id;
@@ -357,6 +370,10 @@ const log = require('../../../api/utils/log.js')('drill:api');
         common.drillDb.collection('drill_event' + appId).ensureIndex({device_id: 1}, function() {});
         common.drillDb.collection('drill_event' + appId).ensureIndex({uid: 1}, function() {});
         common.drillDb.collection('drill_event' + appId).ensureIndex({ts: 1}, function() {});
+        common.drillDb.collection('drill_event' + appId).ensureIndex({d: 1}, function() {});
+        common.drillDb.collection('drill_event' + appId).ensureIndex({m: 1}, function() {});
+        common.drillDb.collection('drill_event' + appId).ensureIndex({w: 1}, function() {});
+        common.drillDb.collection('drill_event' + appId).ensureIndex({h: 1}, function() {});
     });
 
     plugins.register("/i/apps/delete", function(ob) {
@@ -473,7 +490,7 @@ const log = require('../../../api/utils/log.js')('drill:api');
                         continue;
                     }
 
-                    var tmpSegval = currEvent.segmentation[segKey] + "";
+                    let tmpSegval = currEvent.segmentation[segKey] + "";
 
                     if (tmpSegval === "") {
                         continue;
@@ -481,6 +498,7 @@ const log = require('../../../api/utils/log.js')('drill:api');
 
                     // Mongodb field names can't start with $ or contain .
                     tmpSegVal = tmpSegval.replace(/^\$/, "").replace(/\./g, ":");
+                    // tmpSegval = common.convertToType(tmpSegval);
 
                     // if (forbiddenSegValues.indexOf(tmpSegval) !== -1) {
                     //     tmpSegval = "[CLY]" + tmpSegVal;
@@ -515,13 +533,14 @@ const log = require('../../../api/utils/log.js')('drill:api');
                             || segKey === 'ram_total' || segKey === 'run' || segKey === 'gideros') {
                             type = 'n';
                         }
-                    } else {
-                        if (common.isNumber(segKey)) {
-                            type = 'n';
-                        } else if (typeof segKey === 'boolean') {
-                            type = 'l'
-                        }
-                    }
+                    } 
+                    // else {
+                        // if (common.isNumber(tmpSegval)) {
+                        //     type = 'n';
+                        // } else if (typeof tmpSegval === 'boolean') {
+                        //     type = 'l'
+                        // }
+                    // }
 
                     metaToFetch[j] = {
                         eventName: shortEventName,
@@ -551,8 +570,16 @@ const log = require('../../../api/utils/log.js')('drill:api');
         async.map(Object.keys(metaToFetch), fetchEventMeta, function(err, eventMetaDocs) {
             for(let i = 0; i < eventMetaDocs.length; i++) {
                 let meta = eventMetaDocs[i];
-                if (meta && meta.type === 'l') {
-                    common.arrayAddUniq(meta.values, metaToFetch[i].value);
+                if (meta) {
+                    if ('s' === meta.type) { // string's meta is null
+                        meta = {};
+                        // meta.values = [metaToFetch[i].value];
+                    } else {
+                        if (!meta.values) {
+                            meta.values = [];
+                        }
+                        common.arrayAddUniq(meta.values, metaToFetch[i].value);
+                    }
                 } else {
                     meta = {};
                     // meta.values = [metaToFetch[i].value];
@@ -580,7 +607,7 @@ const log = require('../../../api/utils/log.js')('drill:api');
                 if (meta && meta.sg && meta.sg[metaToFetch[id].key]) {
                     result = meta.sg[metaToFetch[id].key];
                 }
-                callback(false, result);
+                callback(null, result);
             });
         }
     }
@@ -674,6 +701,7 @@ const log = require('../../../api/utils/log.js')('drill:api');
 
                     // Mongodb field names can't start with $ or contain .
                     tmpSegVal = tmpSegval.replace(/^\$/, "").replace(/\./g, ":");
+                    // tmpSegval = common.convertToType(tmpSegval);
 
                     // if (forbiddenSegValues.indexOf(tmpSegval) !== -1) {
                     //     tmpSegval = "[CLY]" + tmpSegVal;
@@ -723,6 +751,9 @@ const log = require('../../../api/utils/log.js')('drill:api');
                     || 'lv' === key) {
                     meta.type = 'l'
                     if (meta.values) {
+                        if (!meta.values) {
+                            meta.values = [];
+                        }
                         common.arrayAddUniq(meta.values, appUser[key]);
                     } else {
                         meta.values = [appUser[key]];
@@ -756,7 +787,7 @@ const log = require('../../../api/utils/log.js')('drill:api');
                     result = meta.up[key];
                 }
                 result.key = key;
-                callback(false, result);
+                callback(null, result);
             });
         }
     }
