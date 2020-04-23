@@ -1,0 +1,67 @@
+
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"></head><body><div class="widget cohorts-widget">
+	<div class="widget-header">
+		<div class="left">
+            {{#if segmentations}}
+            <div class="title small">{{page-title}}</div>
+            {{else}}
+			<div class="title">{{page-title}}</div>
+            {{/if}}
+		</div>
+		{{> date-selector }}
+	</div>
+    <div class="alternative-selection">
+        <div style="display: inline-block; box-sizing: border-box; width: 100%; padding-right: 85px;">
+            <div id="alternative-selector" class="cly-multi-select" data-max="{{max-alternatives}}" style="width: 100%; box-sizing: border-box;">
+                <div class="select-inner">
+                    <div class="text-container">
+                        <div class="text">
+                            <div class="default-text">{{multi-select-text}}</div>
+                        </div>
+                    </div>
+                    <div class="right combo"></div>
+                </div>
+                <div class="select-items square" style="width:100%;">
+                    <div>
+                        {{#eachOfObject alternatives}}
+                        <div data-value="{{{property}}}" class="item">{{{value}}}</div>
+                        {{/eachOfObject}}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div style="position: absolute; top:50%; right:15px; margin-top: -18px;">
+            <div id="compare-button" class="icon-button green disabled" data-localize="cohorts.compare"></div>
+        </div>
+    </div>
+    <div class="widget-content" style="border:none;">
+        <div class="cly-button-menu cohorts-menu" tabindex="1">
+            <a class="item view-cohort"><i class="fa fa-eye view-cohort"></i><span class="view-cohort" data-localize="cohorts.view-users"></span></a>
+            <a class="item edit-cohort"><i class="fa fa-pencil edit-cohort"></i><span class="edit-cohort" data-localize="cohorts.edit"></span></a>
+            <a class="item delete-cohort"><i class="fa fa-trash delete-cohort"></i><span class="delete-cohort" data-localize="common.delete"></span></a>
+        </div>
+		<div id="big-numbers-container" class="dashboard">
+			{{#each usage}}
+			<div class="big-numbers top two-columns help-zone-vs" data-help-localize="help.{{this.help}}">
+				<div class="inner">
+					<div class="select" id="{{this.id}}">
+						<div class="title">{{this.title}}</div>
+					</div>
+				</div>
+			</div>
+			{{/each}}
+		</div>
+	</div>
+	<div class="widget-footer" style="height:220px; padding-top:20px; padding-bottom:10px; overflow:visible; box-shadow:none; position:relative;">
+        <div id="empty-graph" data-localize="common.graph.no-data"></div>
+		<div id="dashboard-graph" class="graph" style="height:100%; margin-left:-10px;"></div>
+        <div class="graph-no-data">
+            <div class="inner">
+                <div class="icon"></div>
+                <div class="text" data-localize="common.graph.no-data"></div>
+            </div>
+        </div>
+	</div>
+</div>
+<table id="dataTableOne" class="d-table cohorts-table help-zone-vb no-fix" cellpadding="0" cellspacing="0" data-help-localize="help.{{{table-helper}}}"></table>
+</body></html>

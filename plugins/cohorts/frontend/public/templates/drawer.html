@@ -1,0 +1,33 @@
+<div id="cohorts-drawer" class="cly-drawer" v-bind:class="{'open' : isOpen}">
+    <div class="title">
+        <span id="drawer-title" v-text="title"></span>
+        <div class="close" v-on:click="hide">
+            <i class="ion-ios-close-empty"></i>
+        </div>
+    </div>
+
+    <div class="details">
+        <div class="section">
+            <div class="label" data-localize="cohorts.cohort-name"></div>
+            <div>
+                <input type="text" class="input" v-model="cohortName" />
+            </div>
+        </div>
+
+        <div class="section">
+            <user-property-segmentation ref="userSegmentation" />
+        </div>
+        <div class="section">
+            <drill-query-builder 
+                ref="behaviorSegmentation" 
+                builder-type="cohorts" 
+                v-bind:event-list="events" 
+                header-text-key="cohorts.user-behaviour-segmentation" 
+                step-name-key="cohorts.users-who" />
+        </div>
+    </div>
+
+    <div class="buttons">
+        <div class="icon-button green" v-bind:class="{'disabled' : isBtnDisabled}" v-on:click="saveCohort" v-text="saveButton"></div>
+    </div>
+</div>

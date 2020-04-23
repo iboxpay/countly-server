@@ -1,0 +1,23 @@
+{
+  "name": "countly-cohorts-users",
+  "title": "Cohorts",
+  "version": "1.0.0",
+  "description": "Group your users based on their in-app behaviour and segment all your data using these groups",
+  "author": "Count.ly",
+  "homepage": "https://count.ly/plugins/slipping-away-users/",
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/iboxpay/countly-server.git"
+  },
+  "bugs": {
+    "url": "http://github.com/iboxpay/countly-server/issues"
+  },
+  "keywords": [
+    "countly",
+    "analytics",
+    "churn",
+    "cohorts"
+  ],
+  "dependencies": {},
+  "private": true
+}
