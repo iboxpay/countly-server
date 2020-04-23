@@ -135,23 +135,20 @@ if [ ! -f "$DIR/../api/config.js" ]; then
 	cp "$DIR/../api/config.sample.js" "$DIR/../api/config.js"
 fi
 
+if [ ! -f "$DIR/../api/configs/config.db_out.js" ]; then
+	cp "$DIR/../api/configs/config.db_out.sample.js" "$DIR/../api/configs/config.db_out.js"
+fi
+
+if [ ! -f "$DIR/../api/configs/config.db_fs.js" ]; then
+	cp "$DIR/../api/configs/config.db_fs.sample.js" "$DIR/../api/configs/config.db_fs.js"
+fi
+
 if [ ! -f "$DIR/../frontend/express/config.js" ]; then
 	cp "$DIR/../frontend/express/config.sample.js" "$DIR/../frontend/express/config.js"
 fi
 
 if [ ! -f "$DIR/../plugins/plugins.json" ]; then
 	cp "$DIR/../plugins/plugins.default.json" "$DIR/../plugins/plugins.json"
-    
-if [ ! -f $DIR/../api/configs/config.db_out.js ]; then
-	cp $DIR/../api/configs/config.db_out.sample.js $DIR/../api/configs/config.db_out.js
-fi
-
-if [ ! -f $DIR/../api/configs/config.db_fs.js ]; then
-	cp $DIR/../api/configs/config.db_fs.sample.js $DIR/../api/configs/config.db_fs.js
-fi
-
-if [ ! -f $DIR/../frontend/express/config.js ]; then
-	cp $DIR/../frontend/express/config.sample.js $DIR/../frontend/express/config.js
 fi
 
 if [ ! -f "/etc/timezone" ]; then
