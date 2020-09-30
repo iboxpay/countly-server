@@ -1,16 +1,22 @@
+const { type } = require('os');
+const { indexOf } = require('../../../api/utils/common.js');
+
 var plugin = {},
     crypto = require('crypto'),
     plugins = require('../../pluginManager.js'),
     common = require('../../../api/utils/common.js'),
     countlyCommon = require('../../../api/lib/countly.common.js'),
     async = require('async'),
+    taskmanager = require('../../../api/utils/taskmanager.js'),
     Promise = require("bluebird");
 
 const drillConfig = require('../config.js', 'dont-enclose');
+const mrConfig = require('../config.db_mr.js', 'dont-enclose');
 const log = require('../../../api/utils/log.js')('drill:api');
 
 (function() {
     common.drillDb = plugins.dbConnection(drillConfig);
+    common.mrDb = plugins.dbConnection(mrConfig);
 
     // read api call
     plugins.register("/o", function(ob) {
@@ -19,7 +25,7 @@ const log = require('../../../api/utils/log.js')('drill:api');
         if (obParams.qstring.method === 'segmentation') {
             validateUserForDataReadAPI(obParams, function(params){
                 let ands = [];
-                // let tmp = {};
+                let userCondition = [];
                 let result;
                 let bucket = params.qstring.bucket;
                 if (params.qstring.period) {
@@ -67,12 +73,13 @@ const log = require('../../../api/utils/log.js')('drill:api');
                         let tmp = {};
                         tmp[k] = filter[k];
                         ands.push(tmp);
+                        userCondition.push(tmp);
                     }
                 }
                 countlyCommon.setPeriod(params.qstring.period, true);
                 let period = countlyCommon.periodObj;
                 let dateIds = getDateIds(bucket, period);
-                let collectionName = 'drill_events' + crypto.createHash('sha1').update(params.qstring.event + params.qstring.app_id).digest('hex');
+                let collectionName = 'mr_events' + crypto.createHash('sha1').update(params.qstring.event + params.qstring.app_id).digest('hex');
                 let condition;
                 switch(bucket) {
                     case "monthly":
@@ -96,8 +103,6 @@ const log = require('../../../api/utils/log.js')('drill:api');
                 timeObj[condition] = { $in: dateIds }
                 ands.push(timeObj);
                 let pipeline = [];
-                // let phoneTmp = {'sg.phone_num': {$in: ['18927430742']}}
-                // pipeline.push({$match: {$and: [timeObj, phoneTmp]}});
                 pipeline.push({$match: {$and: ands}});
                 
                 let uidGroup = {};
@@ -121,26 +126,143 @@ const log = require('../../../api/utils/log.js')('drill:api');
                 pipeline.push({$group: dateGroup});
                 // pipeline.push({$sort: {_id: 1}})
 
-                common.drillDb.collection(collectionName).aggregate(pipeline, {allowDiskUse: true}, function(err, res) {
-                    if (!err && res && res.length > 0) {
-                        let result = {};
-                        let data = {};
-                        res.forEach(function(doc) {
-                            let item = {};
-                            item[common.dbMap.unique] = doc.u;
-                            item[common.dbMap.total] = doc.c;
-                            item[common.dbMap.sum] = doc.s;
-                            item[common.dbMap.dur] = doc.dur;
-                            data[doc._id[condition]] = item;
+                taskmanager.getResults({
+                    db: common.db,
+                    query: {meta: JSON.stringify({query: params.qstring})},
+                    projection: {data: 1, _id: 0, subtask_key: 1, name: 1}
+                }, (err, res) => {
+                    if (err) {
+                        common.returnOutput(params, []);
+                    }
+                    if (res.length !== 0) {
+                        let body = {}, result = {};
+                        res.forEach(function(value) {
+                            if (value.data) {
+                                let data = JSON.parse(value.data);
+                                if (Object.keys(data).length !== 0) {
+                                    body[value.name] = data;
+                                }
+                            }    
                         });
-                        result["data"] = data;
+                        result["data"] = body;
                         result['app_id'] = params.qstring.app_id;
                         result['lu'] = new Date();
                         common.returnOutput(params, result);
                     } else {
-                        common.returnOutput(params, result || []);
+                        let index = 0;
+                        dateIds.forEach(function(id) {
+                            let pipeline2 = [];
+                            let timeObj2 = {};
+                            timeObj2[condition] = id
+        
+                            pipeline2.push({$match: {$and: userCondition.concat(timeObj2)}});
+                            pipeline2.push({$group: uidGroup});
+                            pipeline2.push({$group: dateGroup});
+                            index++;
+                            common.mrDb.collection(collectionName).aggregate(pipeline2, {allowDiskUse: true}, taskmanager.longtask({
+                                db:common.db, 
+                                threshold:60, 
+                                force:true,
+                                app_id: params.qstring.app_id,
+                                params: params,
+                                type:"drill", 
+                                meta: JSON.stringify({
+                                    query: params.qstring
+                                }),
+                                name:id,
+                                subtask_key: index,
+                                view:"#/drill/",
+                                processData:function(err, res, callback){
+                                    if(!err) {
+                                        let body = {};
+                                        res.forEach(function(value) {
+                                            if (value._id) {
+                                                // let date = value._id[Object.keys(value._id)[0]];
+                                                delete value._id;
+                                                // body[date] = value;
+                                                body[common.dbMap.unique] = value.u;
+                                                body[common.dbMap.total] = value.c;
+                                                body[common.dbMap.sum] = value.s;
+                                                body[common.dbMap.dur] = value.dur;
+                                            }
+                                        });
+                                        callback(null, body);
+                                    } else {
+                                        callback(null, {});
+                                    }
+                                }, outputData:function(err, data){
+                                    // common.returnOutput(params, []);
+                                }
+                            }));
+                        });
                     }
                 });
+                
+                // let tasks = [];
+                // dateIds.forEach(function(id) {
+                //     let pipeline2 = [];
+                //     let timeObj2 = {};
+                //     timeObj2[condition] = id
+
+                //     pipeline2.push({$match: {$and: userCondition.concat(timeObj2)}});
+                //     pipeline2.push({$group: uidGroup});
+                //     pipeline2.push({$group: dateGroup});
+                //     let task = new Promise((res, rej) => common.mrDb.collection(collectionName).aggregate(pipeline2, {allowDiskUse: true}, function(err, items) {
+                //         if (err) {
+                //             rej(err);
+                //             return;
+                //         }
+                //         let result = {};
+                //         if (items) {
+                //             items.forEach(function(doc) {
+                //                 result[common.dbMap.unique] = doc.u;
+                //                 result[common.dbMap.total] = doc.c;
+                //                 result[common.dbMap.sum] = doc.s;
+                //                 result[common.dbMap.dur] = doc.dur;
+                //                 result['id'] = doc._id[condition];
+                //             });   
+                //         }
+                //         res(result);
+                //     }));
+                //     tasks.push(task);
+                // });
+
+                // Promise.all(tasks).then((values) => {
+                //     let body = {}, result = {};
+                //     values.forEach(function(value) {
+                //         if (value.id) {
+                //             body[value.id] = value;
+                //         }
+                //     });
+                //     result["data"] = body;
+                //     result['app_id'] = params.qstring.app_id;
+                //     result['lu'] = new Date();
+                //     common.returnOutput(params, result);
+                // }, reason => {
+                //     log.d(reason);
+                //     common.returnOutput(params, result || []);
+                // });
+
+                // common.drillDb.collection(collectionName).aggregate(pipeline, {allowDiskUse: true}, function(err, res) {
+                //     if (!err && res && res.length > 0) {
+                //         let result = {};
+                //         let data = {};
+                //         res.forEach(function(doc) {
+                //             let item = {};
+                //             item[common.dbMap.unique] = doc.u;
+                //             item[common.dbMap.total] = doc.c;
+                //             item[common.dbMap.sum] = doc.s;
+                //             item[common.dbMap.dur] = doc.dur;
+                //             data[doc._id[condition]] = item;
+                //         });
+                //         result["data"] = data;
+                //         result['app_id'] = params.qstring.app_id;
+                //         result['lu'] = new Date();
+                //         common.returnOutput(params, result);
+                //     } else {
+                //         common.returnOutput(params, result || []);
+                //     }
+                // });
             });
             return true;
         } else if (obParams.qstring.method === 'segmentation_users') {
@@ -559,7 +681,13 @@ const log = require('../../../api/utils/log.js')('drill:api');
             drill_meta.$set['type'] = 'e';
             drill_meta.$set['app_id'] = params.app_id;
             drill_meta.$set['e'] = shortEventName;
-            common.drillDb.collection("drill_meta" + params.app_id).update({'_id': id}, drill_meta, {'upsert': true}, function() {});
+
+            let metaCol = "drill_meta" + params.app_id;
+            common.drillDb.collection(metaCol).findOne({'_id': id}, function(err, meta) {
+                if (!meta) {
+                    common.drillDb.collection(metaCol).update({'_id': id}, drill_meta, {'upsert': true}, function() {});
+                }
+            });
         }
         
         if (Object.keys(metaToFetch).length == 0) {
@@ -569,26 +697,53 @@ const log = require('../../../api/utils/log.js')('drill:api');
 
         async.map(Object.keys(metaToFetch), fetchEventMeta, function(err, eventMetaDocs) {
             for(let i = 0; i < eventMetaDocs.length; i++) {
+                let id = "meta_" + crypto.createHash('sha1').update(metaToFetch[i].eventName + params.app_id).digest('hex');
+                let update = {'$set': {}};
+
+                let typeKey = params.app_id + ":" + id + ":" + metaToFetch[i].key + ":type";
+                let valuesKey = params.app_id + ":" + id + ":" + metaToFetch[i].key + ":values";
+
                 let meta = eventMetaDocs[i];
                 if (meta) {
+                    let value = metaToFetch[i].value;
                     if ('s' === meta.type) { // string's meta is null
-                        meta = {};
-                        // meta.values = [metaToFetch[i].value];
+                        meta.values = value;
                     } else {
                         if (!meta.values) {
                             meta.values = [];
                         }
-                        common.arrayAddUniq(meta.values, metaToFetch[i].value);
+                        if (meta.values.indexOf(value) === -1) { // if not exists, add
+                            common.arrayAddUniq(meta.values, value);
+                        } else {
+                            // if exists, break
+                            continue; 
+                        }
                     }
-                } else {
+                    meta.type = metaToFetch[i].type;
+                    update.$set['sg.' + metaToFetch[i].key] = meta;
+
+                    common.redis.set(typeKey, meta.type);
+                    common.redis.sadd(valuesKey, value);
+                } else { // return undefined whether db not exist.
                     meta = {};
-                    // meta.values = [metaToFetch[i].value];
+                    Object.keys(metaToFetch).forEach(key => {
+                        let obj = metaToFetch[key];
+                        let type = obj.type;
+                        if ('s' === type) {
+                            meta.values = obj.value;
+                        } else {
+                            meta.values = [obj.value];
+                        }
+                        meta.type = type;
+                        update.$set['sg.' + obj.key] = meta;
+                        typeKey = params.app_id + ":" + id + ":" + obj.key + ":type";
+                        valuesKey = params.app_id + ":" + id + ":" + obj.key + ":values";
+                        
+                        common.redis.set(typeKey, meta.type);
+                        common.redis.sadd(valuesKey, obj.value);
+                    })     
                 }
-                meta.type = metaToFetch[i].type;
-                let id = "meta_" + crypto.createHash('sha1').update(metaToFetch[i].eventName + params.app_id).digest('hex');
-                let update = {'$set': {}};
-                update.$set['sg.' + metaToFetch[i].key] = meta;
-                common.drillDb.collection("drill_meta" + params.app_id).update({'_id': id}, update, {'upsert': true}, function() {});
+                // common.drillDb.collection("drill_meta" + params.app_id).update({'_id': id}, update, {'upsert': true}, function() {});
             }
             processMetaUp(appUser, params.app_id);
         });
@@ -735,9 +890,17 @@ const log = require('../../../api/utils/log.js')('drill:api');
     function processMetaUp(appUser, appId) {
         let id = "meta_up";
         let update = {'$set': {}};
+
         update.$set['app_id'] = appId;
         update.$set['type'] = 'up';
 
+        let metaCol = "drill_meta" + appId;
+        common.drillDb.collection(metaCol).findOne({'_id': id}, function(err, meta) {
+            if (!meta) {
+                common.drillDb.collection(metaCol).update({'_id': id}, update, {'upsert': true}, function() {});
+            }
+        });
+        
         async.map(Object.keys(appUser), fetchUpItem, function(err, userMetaDocs) {
             for(let i = 0; i < userMetaDocs.length; i++) {
                 let meta = userMetaDocs[i];
@@ -751,10 +914,16 @@ const log = require('../../../api/utils/log.js')('drill:api');
                     || 'lv' === key) {
                     meta.type = 'l'
                     if (meta.values) {
-                        if (!meta.values) {
-                            meta.values = [];
+                        // if (!meta.values) {
+                        //     meta.values = [];
+                        // }
+                        let value = appUser[key];
+                        if (meta.values.indexOf(value) === -1) {
+                            common.arrayAddUniq(meta.values, value);
+                        } else {
+                            // if exists, break
+                            continue; 
                         }
-                        common.arrayAddUniq(meta.values, appUser[key]);
                     } else {
                         meta.values = [appUser[key]];
                     }
@@ -767,7 +936,13 @@ const log = require('../../../api/utils/log.js')('drill:api');
                 }
                 //TODO: CMP, CUSTOM property handle
                 update.$set['up.' + key] = meta;
-                common.drillDb.collection("drill_meta" + appId).update({'_id': id}, update, {'upsert': true}, function() {});
+
+                let typeKey = appId + ":meta_up:" + key + ":type";
+                let valuesKey = appId + ":meta_up:" + key + ":values";
+                common.redis.set(typeKey, meta.type);
+                common.redis.sadd(valuesKey, appUser[key]);
+
+                // common.drillDb.collection(metaCol).update({'_id': id}, update, {'upsert': true}, function() {});
                 delete meta.key;
             }
         });

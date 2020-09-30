@@ -6,11 +6,15 @@ var plugin = {},
     crypto = require('crypto'),
     Promise = require("bluebird"),
     common = require('../../../api/utils/common.js'),
+    taskmanager = require('../../../api/utils/taskmanager.js'),
     countlyCommon = require('../../../api/lib/countly.common.js');
 
 const log = require('../../../api/utils/log.js')('funnels:api');
+const mrConfig = require('../config.db_mr.js', 'dont-enclose');
 
 (function() {
+    common.mrDb = plugins.dbConnection(mrConfig);
+
     // read api call
     plugins.register("/o", function(ob) {
         var obParams = ob.params;
@@ -149,155 +153,167 @@ const log = require('../../../api/utils/log.js')('funnels:api');
                 filter.ts.$lt.setTimezone(params.appTimezone);
                 filter.ts.$lt = filter.ts.$lt.getTime() + filter.ts.$lt.getTimezoneOffset() * 60000;
 
-                // let promises = [];
-                // promises.push(new Promise((resolve, reject) => {
-                //     common.db.collection('funnels').findOne({_id: id}, {steps: 1, queries: 1, queryTexts: 1, _id: 0}, function(err, res) {
-                //         if (!err && res && res.steps && res.steps.length > 1) {
-                //             try {
-                //                 res.steps = JSON.parse(res.steps);
-                //                 res.queries = JSON.parse(res.queries);
-                //                 res.queryTexts = JSON.parse(res.queryTexts);
-                //             } catch (error) {
-                //                 reject(error);
-                //             }
-                //             resolve(res);
-                //         } else {
-                //             log.d(err);
-                //             reject(err);
-                //         }
-                //     });
-                // }));
-                
-                // promises.push(new Promise((resolve, reject) => {
-                //     common.db.collection('app_users' + appId).estimatedDocumentCount(function(err, total){
-                //         if (!err && total) {
-                //             resolve(total);
-                //         } else {
-                //             log.d(err);
-                //             reject(err);
-                //         }
-                //     });
-                // }));
+                taskmanager.getResults({
+                    db: common.db,
+                    query: {meta: JSON.stringify({query: params.qstring})},
+                    projection: {data: 1, _id: 1, ts: 1}
+                }, (err, res) => {
+                    if (err) {
+                        log.d(err);
+                        common.returnOutput(params, []);
+                    }
+                    if (res.length !== 0) {
+                        // sorts the res array by ts in ascending order
+                        res.sort((a, b) => {
+                            return a.ts - b.ts;
+                        });
+                        let body = [], result = {};
+                        let totalUser = res[0];
+                        delete res[0];
 
-                // if (promises.length) {
-                new Promise((resolve, reject) => {
-                    common.db.collection('funnels').findOne({_id: id}, {steps: 1, queries: 1, queryTexts: 1, _id: 0}, function(err, res) {
-                        if (!err && res && res.steps && res.steps.length > 1) {
-                            try {
-                                res.steps = JSON.parse(res.steps);
-                                res.queries = JSON.parse(res.queries);
-                                res.queryTexts = JSON.parse(res.queryTexts);
-                            } catch (error) {
-                                reject(error);
-                            }
-                            resolve(res);
+                        res.forEach(function(value) {
+                            if (value.data) {
+                                let data = JSON.parse(value.data);
+                                if (Object.keys(data).length !== 0) {
+                                    body.push(data);
+                                }
+                            }    
+                        });
+
+                        if (body.length < 3) {
+                            taskmanager.deleteResult({id: totalUser._id}, (err, res) => {});
+
+                            res.forEach(function(value) {
+                                taskmanager.deleteResult({id: value._id}, (err, res) => {});
+                            });
+                            common.returnOutput(params, []);
                         } else {
-                            log.d(err);
-                            reject(err);
-                        }
-                    });
-                // Promise.all(promises).then(param => {
-                }).then(res => {
-                    new Promise((resolve, reject) => {
-                        let funnel = res;
-                        // let totalUsers = param[1];
-                        let totalUsers = 0;
-                        let tmpSteps = funnel.steps;
-                        let tmpQueries = funnel.queries;
-                        let tmpQueryTexts = funnel.queryTexts;
-                        let key = tmpSteps[0];
-                        let collectionName = "drill_events" + crypto.createHash('sha1').update(key + appId).digest('hex');
-                        let users = 0,
-                            leftUsers = 0;
-                        common.drillDb.collection(collectionName).find(filter, {uid: 1, c: 1, _id: 0}).toArray(function(err, res){
-                            if (!err && res && res.length > 0) {
-                                let uids = [], times = 0;
-                                for (let i = 0; i < res.length; i++) { // clear repeat uid, times plus
-                                    let item = res[i];
-                                    times += common.isNumber(item.c) ? parseInt(item.c) : 0;
-                                    if (i != 0) {
-                                        let lastItem = res[i - 1];
-                                        if (lastItem.uid === item.uid) {
-                                            continue;
-                                        } else {
-                                            if (!uids.includes(res[i].uid)) {
-                                                uids.push(res[i].uid);
-                                            }
-                                        }
-                                    } else {
-                                        uids.push(res[i].uid);
+                            result["total_users"] = parseInt(totalUser.data) || 0;
+                            result["steps"] = body;
+                            result['users_in_first_step'] = body[0].totalUsers;
+                            let last = body[body.length -1];
+                            result['success_users'] = last.users;
+                            result['success_rate'] = ( last.users / result.users_in_first_step).toFixed(3) * 100;
+                            common.returnOutput(params, result);
+                        }   
+                    } else {
+                        new Promise((resolve, reject) => {
+                            common.db.collection('funnels').findOne({_id: id}, {steps: 1, queries: 1, queryTexts: 1, _id: 0, name: 1}, function(err, res) {
+                                if (!err && res && res.steps && res.steps.length > 1) {
+                                    try {
+                                        res.steps = JSON.parse(res.steps);
+                                        res.queries = JSON.parse(res.queries);
+                                        res.queryTexts = JSON.parse(res.queryTexts);
+                                    } catch (error) {
+                                        reject(error);
+                                    }
+                                    resolve(res);
+                                } else {
+                                    log.d(err);
+                                    reject(err);
+                                }
+                            });
+                        }).then(res => {
+                            new Promise((resolve, reject) => {
+                                let funnel = res;
+                                let totalUsers = 0;
+                                let tmpSteps = funnel.steps;
+                                let tmpQueries = funnel.queries;
+                                let tmpQueryTexts = funnel.queryTexts;
+                                let funnelName = funnel.name;
+                                let key = tmpSteps[0];
+                                let collectionName = "mr_events" + crypto.createHash('sha1').update(key + appId).digest('hex');
+                                let users = 0,leftUsers = 0;
+                                let match = {};
+        
+                                // caculate total number:  total number of users (given segmentation filter) 
+                                // and how many users of your application entered this funnel by performing the first step event at the top
+        
+                                let totalMatch = {}, totalGroup = {};
+                                let totalPipe = [];
+        
+                                for (let condition in filter) {
+                                    if (condition) {
+                                        totalMatch[condition] = filter[condition];
                                     }
                                 }
-                                totalUsers = uids.length;
-                                users = uids.length;
-                                leftUsers = totalUsers - users;
-                                let percent = (users / totalUsers).toFixed(3) * 100;
-                                let percentLeft = (leftUsers / totalUsers).toFixed(3) * 100;
-                                let item = {
-                                    step: tmpSteps[0], 
-                                    totalUsers: totalUsers, 
-                                    users: users, 
-                                    leftUsers: leftUsers,
-                                    percent: percent,
-                                    percentUserEntered: percent,
-                                    percentLeft: percentLeft,
-                                    percentLeftUserEntered: percentLeft
-                                };
-                                if (tmpQueries[0]) {
-                                    item.queries = tmpQueries[0];
-                                }
-                                if (tmpQueryTexts[0]) {
-                                    item.queryText = tmpQueryTexts[0];
-                                }
-
-                                item.times = times;
-                                item.averageTimeSpend = (times / users).toFixed(0);
-
-                                steps.push(item);
-                                result.total_users = totalUsers;
-                                result.users_in_first_step = users;
-
-                                funnel.steps.shift();
-                                funnel.queries.shift();
-                                funnel.queryTexts.shift();
-
-                                let data = [];
-                                data.push(funnel.steps);
-                                data.push(users);
-                                data.push(uids)
-                                data.push(funnel.queries);
-                                data.push(funnel.queryTexts);
-                                resolve(data);
-                            } else {
-                                log.d(err);
-                                reject(err);
-                            }
-                        });
-                    }).then(data => {
-                        function get(params) {
-                            return new Promise((resolve, reject) => {
-                                let tmpSteps = params[0];
-                                let totalUsers = params[1];
-                                let uid = params[2];
-                                let tmpQueries = params[3];
-                                let tmpQueryTexts = params[4];
-
-                                let users = 0,
-                                    leftUsers = 0;
-                                let key = tmpSteps[0];
-                                
-                                let collectionName = "drill_events" + crypto.createHash('sha1').update(key + appId).digest('hex');
-
-                                async.map(uid, fetchDrillEvent, (err, events) => {
-                                    if (!err && events) {
-                                        let uids = [], times = 0;
-                                        events.forEach(element => {
-                                            if (element) {
-                                                uids.push(element.uid);
-                                                times += common.isNumber(element.c) ? parseInt(element.c) : 0;
+                                totalGroup['_id'] = "$uid";
+        
+                                totalPipe.push({$match: totalMatch});
+                                totalPipe.push({$group: totalGroup});
+        
+                                common.mrDb.collection(collectionName).aggregate(totalPipe, {allowDiskUse: true}, taskmanager.longtask({
+                                    db:common.db, 
+                                    threshold:60, 
+                                    force:true,
+                                    app_id: params.qstring.app_id,
+                                    params: params,
+                                    type:"funnels", 
+                                    meta: JSON.stringify({
+                                        query: params.qstring
+                                    }),
+                                    name:"totalUser",
+                                    view:"#/funnels/task/",
+                                    processData:function(err, res, callback){
+                                        if (!err && res && res.length > 0) {
+                                            let uids = [];
+                                            for (let i = 0; i < res.length; i++) {
+                                                let item = res[i];
+                                                uids.push(item._id);
                                             }
-                                        });
-                                        if (uids.length) {
+                                            callback(null, uids.length);
+                                        } else {
+                                            log.d(err);
+                                            callback(null, {});
+                                        }
+                                    }, outputData:function(err, data){
+                                        log.d(err);
+                                    }
+                                }));
+                                
+                                // first step handler
+                                let stepQuery = tmpQueries[0];
+                                for (let query in stepQuery) {
+                                    if (query) {
+                                        match[query] = stepQuery[query];
+                                    }
+                                }
+                                
+                                for (let condition in filter) {
+                                    if (condition) {
+                                        match[condition] = filter[condition];
+                                    }
+                                }
+        
+                                let group = {};
+                                group['_id'] = "$uid";
+                                group[common.dbEventMap.count] = { $sum: "$c" };
+        
+                                let pipeline = [];
+                                pipeline.push({$match: match});
+                                pipeline.push({$group: group});
+        
+                                common.mrDb.collection(collectionName).aggregate(pipeline, {allowDiskUse: true}, taskmanager.longtask({
+                                    db:common.db, 
+                                    threshold:60, 
+                                    force:true,
+                                    app_id: params.qstring.app_id,
+                                    params: params,
+                                    type:"funnels", 
+                                    meta: JSON.stringify({
+                                        query: params.qstring
+                                    }),
+                                    name:funnelName,
+                                    view:"#/funnels/task/",
+                                    processData:function(err, res, callback){
+                                        if (!err && res && res.length > 0) {
+                                            let uids = [], times = 0;
+                                            for (let i = 0; i < res.length; i++) {
+                                                let item = res[i];
+                                                times += common.isNumber(item.c) ? parseInt(item.c) : 0;
+                                                uids.push(item._id);
+                                            }
+                                            totalUsers = uids.length;
                                             users = uids.length;
                                             leftUsers = totalUsers - users;
                                             let percent = (users / totalUsers).toFixed(3) * 100;
@@ -318,84 +334,370 @@ const log = require('../../../api/utils/log.js')('funnels:api');
                                             if (tmpQueryTexts[0]) {
                                                 item.queryText = tmpQueryTexts[0];
                                             }
-
+                                
                                             item.times = times;
                                             item.averageTimeSpend = (times / users).toFixed(0);
-
-                                            steps.push(item);
             
-                                            tmpSteps.shift();
-                                            tmpQueries.shift();
-                                            tmpQueryTexts.shift();
+                                            callback(null, item);
+
+                                            funnel.steps.shift();
+                                            funnel.queries.shift();
+                                            funnel.queryTexts.shift();
             
                                             let data = [];
-                                            data.push(tmpSteps);
+                                            data.push(funnel.steps);
                                             data.push(users);
                                             data.push(uids)
-                                            data.push(tmpQueries);
-                                            data.push(tmpQueryTexts);
+                                            data.push(funnel.queries);
+                                            data.push(funnel.queryTexts);
                                             resolve(data);
                                         } else {
-                                            log.d('length equal 0');
+                                            log.d(err);
+                                            callback(null, {});
                                             reject(err);
                                         }
-                                    } else {
+                                    }, outputData:function(err, data){
                                         log.d(err);
-                                        reject(err);
                                     }
-                                });
-
-                                /**
-                                 * fetch drill event
-                                 * @param {string} key - key to of event to fetchDrillEvent 
-                                 * @param {function} callback - for result
-                                 */
-                                function fetchDrillEvent(key, callback) {
-                                    let uidVal = key;
-                                    common.drillDb.collection(collectionName).find({uid: uidVal}, {uid: 1, c: 1, _id: 0}).toArray(function(err, res) {
-                                        let result, c = 0;
-                                        if (!err && res && res.length > 0) {
-                                            for (let i = 0; i < res.length; i++) {
-                                                c += common.isNumber(res[i].c) ? parseInt(res[i].c) : 0;
+                                }));
+        
+                                // caculate total number:  total number of users (given segmentation filter) 
+                                // and how many users of your application entered this funnel by performing the first step event at the top
+                                // common.drillDb.collection(collectionName).find(filter, {uid: 1, _id: 0}).toArray(function(err, res){
+                                //     if (!err && res && res.length > 0) {
+                                //         let uids = [];
+                                //         for (let i = 0; i < res.length; i++) { // clear repeat uid, times plus
+                                //             let item = res[i];
+                                //             if (i != 0) {
+                                //                 let lastItem = res[i - 1];
+                                //                 if (lastItem.uid === item.uid) {
+                                //                     continue;
+                                //                 } else {
+                                //                     if (!uids.includes(res[i].uid)) {
+                                //                         uids.push(res[i].uid);
+                                //                     }
+                                //                 }
+                                //             } else {
+                                //                 uids.push(res[i].uid);
+                                //             }
+                                //         }
+                                //         result.total_users = uids.length;
+                                //     }
+                                // });
+                                
+                                // common.drillDb.collection(collectionName).find(match, {uid: 1, c: 1, _id: 0}).toArray(function(err, res){
+                                //     if (!err && res && res.length > 0) {
+                                //         let uids = [], times = 0;
+                                //         for (let i = 0; i < res.length; i++) { // clear repeat uid, times plus
+                                //             let item = res[i];
+                                //             times += common.isNumber(item.c) ? parseInt(item.c) : 0;
+                                //             if (i != 0) {
+                                //                 let lastItem = res[i - 1];
+                                //                 if (lastItem.uid === item.uid) {
+                                //                     continue;
+                                //                 } else {
+                                //                     if (!uids.includes(res[i].uid)) {
+                                //                         uids.push(res[i].uid);
+                                //                     }
+                                //                 }
+                                //             } else {
+                                //                 uids.push(res[i].uid);
+                                //             }
+                                //         }
+                                //         totalUsers = uids.length;
+                                //         users = uids.length;
+                                //         leftUsers = totalUsers - users;
+                                //         let percent = (users / totalUsers).toFixed(3) * 100;
+                                //         let percentLeft = (leftUsers / totalUsers).toFixed(3) * 100;
+                                //         let item = {
+                                //             step: tmpSteps[0], 
+                                //             totalUsers: totalUsers, 
+                                //             users: users, 
+                                //             leftUsers: leftUsers,
+                                //             percent: percent,
+                                //             percentUserEntered: percent,
+                                //             percentLeft: percentLeft,
+                                //             percentLeftUserEntered: percentLeft
+                                //         };
+                                //         if (tmpQueries[0]) {
+                                //             item.queries = tmpQueries[0];
+                                //         }
+                                //         if (tmpQueryTexts[0]) {
+                                //             item.queryText = tmpQueryTexts[0];
+                                //         }
+        
+                                //         item.times = times;
+                                //         item.averageTimeSpend = (times / users).toFixed(0);
+        
+                                //         steps.push(item);
+                                //         // result.total_users = totalUsers;
+                                //         result.users_in_first_step = users;
+        
+                                //         funnel.steps.shift();
+                                //         funnel.queries.shift();
+                                //         funnel.queryTexts.shift();
+        
+                                //         let data = [];
+                                //         data.push(funnel.steps);
+                                //         data.push(users);
+                                //         data.push(uids)
+                                //         data.push(funnel.queries);
+                                //         data.push(funnel.queryTexts);
+                                //         resolve(data);
+                                //     } else {
+                                //         if (err) {
+                                //             log.d(err);
+                                //             reject(err);
+                                //         } else {
+                                //             common.returnOutput(params, []);
+                                //         }
+                                //     }
+                                // });
+                            }).then(data => {
+                                function get(stepParam) {
+                                    return new Promise((resolve, reject) => {
+                                        let tmpSteps = stepParam[0];
+                                        let totalUsers = stepParam[1];
+                                        let uid = stepParam[2];
+                                        let tmpQueries = stepParam[3];
+                                        let tmpQueryTexts = stepParam[4];
+        
+                                        let users = 0,
+                                            leftUsers = 0;
+                                        let key = tmpSteps[0];
+                                        
+                                        let collectionName = "mr_events" + crypto.createHash('sha1').update(key + appId).digest('hex');
+                                        
+                                        let match = {};
+                                        tmpQueries.forEach(element => {
+                                            for (let query in element) {
+                                                if (query) {
+                                                    match[query] = element[query];
+                                                }
                                             }
-                                            result = {};
-                                            result.uid = res[0].uid;
-                                            result.c = c;
-                                        } else {
-                                            log.d(err);
+                                        });
+                                        for (let condition in filter) {
+                                            if (condition) {
+                                                match[condition] = filter[condition];
+                                            }
                                         }
-                                        callback(null, result);
+                                        match["uid"] = {"$in": uid};
+        
+                                        let group = {};
+                                        group['_id'] = "$uid";
+                                        group[common.dbEventMap.count] = { $sum: "$c" };
+        
+                                        let pipeline = [];
+                                        pipeline.push({$match: match});
+                                        pipeline.push({$group: group});
+        
+                                        common.mrDb.collection(collectionName).aggregate(pipeline, {allowDiskUse: true}, taskmanager.longtask({
+                                            db:common.db, 
+                                            threshold:60, 
+                                            force:true,
+                                            app_id: params.qstring.app_id,
+                                            params: params,
+                                            type:"funnels", 
+                                            meta: JSON.stringify({
+                                                query: params.qstring
+                                            }),
+                                            name:key,
+                                            view:"#/funnels/task/",
+                                            processData:function(err, res, callback){
+                                                if (err) {
+                                                    log.d(err);
+                                                    reject(err);
+                                                }
+                                                if (res && res.length > 0) {
+                                                    let uids = [], times = 0;
+                                                    res.forEach(element => {
+                                                        uids.push(element._id);
+                                                        times += common.isNumber(element.c) ? parseInt(element.c) : 0;
+                                                    });
+                                                    users = uids.length;
+                                                    leftUsers = totalUsers - users;
+                                                    let percent = (users / totalUsers).toFixed(3) * 100;
+                                                    let percentLeft = (leftUsers / totalUsers).toFixed(3) * 100;
+                                                    let item = {
+                                                        step: tmpSteps[0], 
+                                                        totalUsers: totalUsers, 
+                                                        users: users, 
+                                                        leftUsers: leftUsers,
+                                                        percent: percent,
+                                                        percentUserEntered: percent,
+                                                        percentLeft: percentLeft,
+                                                        percentLeftUserEntered: percentLeft
+                                                    };
+                                                    if (tmpQueries[0]) {
+                                                        item.queries = tmpQueries[0];
+                                                    }
+                                                    if (tmpQueryTexts[0]) {
+                                                        item.queryText = tmpQueryTexts[0];
+                                                    }
+        
+                                                    item.times = times;
+                                                    item.averageTimeSpend = (times / users).toFixed(0);
+                                                    callback(null, item);
+
+                                                    tmpSteps.shift();
+                                                    tmpQueries.shift();
+                                                    tmpQueryTexts.shift();
+                    
+                                                    let data = [];
+                                                    data.push(tmpSteps);
+                                                    data.push(users);
+                                                    data.push(uids)
+                                                    data.push(tmpQueries);
+                                                    data.push(tmpQueryTexts);
+                                                    resolve(data);
+                                                } else {
+                                                    tmpSteps.shift();
+                                                    tmpQueries.shift();
+                                                    tmpQueryTexts.shift();
+                    
+                                                    let data = [];
+                                                    data.push(tmpSteps);
+                                                    data.push(0);
+                                                    data.push([]);
+                                                    data.push(tmpQueries);
+                                                    data.push(tmpQueryTexts);
+                                                    resolve(data);
+
+                                                    callback(null, {});
+                                                }
+                                            }, outputData:function(err, data){
+                                                log.d(err);
+                                            }
+                                        }));
+        
+                                        // async.map(uid, fetchDrillEvent, (err, events) => {
+                                        //     if (!err && events) {
+                                        //         let uids = [], times = 0;
+                                        //         events.forEach(element => {
+                                        //             if (element) {
+                                        //                 uids.push(element.uid);
+                                        //                 times += common.isNumber(element.c) ? parseInt(element.c) : 0;
+                                        //             }
+                                        //         });
+                                        //         if (uids.length) {
+                                        //             users = uids.length;
+                                        //             leftUsers = totalUsers - users;
+                                        //             let percent = (users / totalUsers).toFixed(3) * 100;
+                                        //             let percentLeft = (leftUsers / totalUsers).toFixed(3) * 100;
+                                        //             let item = {
+                                        //                 step: tmpSteps[0], 
+                                        //                 totalUsers: totalUsers, 
+                                        //                 users: users, 
+                                        //                 leftUsers: leftUsers,
+                                        //                 percent: percent,
+                                        //                 percentUserEntered: percent,
+                                        //                 percentLeft: percentLeft,
+                                        //                 percentLeftUserEntered: percentLeft
+                                        //             };
+                                        //             if (tmpQueries[0]) {
+                                        //                 item.queries = tmpQueries[0];
+                                        //             }
+                                        //             if (tmpQueryTexts[0]) {
+                                        //                 item.queryText = tmpQueryTexts[0];
+                                        //             }
+        
+                                        //             item.times = times;
+                                        //             item.averageTimeSpend = (times / users).toFixed(0);
+        
+                                        //             steps.push(item);
+                    
+                                        //             tmpSteps.shift();
+                                        //             tmpQueries.shift();
+                                        //             tmpQueryTexts.shift();
+                    
+                                        //             let data = [];
+                                        //             data.push(tmpSteps);
+                                        //             data.push(users);
+                                        //             data.push(uids)
+                                        //             data.push(tmpQueries);
+                                        //             data.push(tmpQueryTexts);
+                                        //             resolve(data);
+                                        //         } else {
+                                        //             log.d('length equal 0');
+                                        //             reject(err);
+                                        //         }
+                                        //     } else {
+                                        //         log.d(err);
+                                        //         reject(err);
+                                        //     }
+                                        // });
+        
+                                        /**
+                                         * fetch drill event
+                                         * @param {string} key - key to of event to fetchDrillEvent 
+                                         * @param {function} callback - for result
+                                         */
+                                        // function fetchDrillEvent(key, callback) {
+                                        //     let uidVal = key;
+                                        //     let subMatch = {};
+                                        //     tmpQueries.forEach(element => {
+                                        //         for (let query in element) {
+                                        //             if (query) {
+                                        //                 subMatch[query] = element[query];
+                                        //             }
+                                        //         }
+                                        //     });
+                                        //     for (let condition in filter) {
+                                        //         if (condition) {
+                                        //             subMatch[condition] = filter[condition];
+                                        //         }
+                                        //     }
+                                        //     subMatch.uid = uidVal;
+                                            
+                                        //     common.drillDb.collection(collectionName).find(subMatch, {uid: 1, c: 1, _id: 0}).toArray(function(err, res) {
+                                        //         let result, c = 0;
+                                        //         if (!err && res && res.length > 0) {
+                                        //             for (let i = 0; i < res.length; i++) {
+                                        //                 c += common.isNumber(res[i].c) ? parseInt(res[i].c) : 0;
+                                        //             }
+                                        //             result = {};
+                                        //             result.uid = res[0].uid;
+                                        //             result.c = c;
+                                        //         } else {
+                                        //             log.d(err);
+                                        //         }
+                                        //         callback(null, result);
+                                        //     })
+                                        // }
                                     })
-                                }
-                            })
-                            .then(function(data) {
-                                if(!data[0].length) { // recursive end
-                                    return data;
-                                }
-                        
-                                return get(data) // recursive call
-                                    .then(data => {
-                                        return data; // recursive call end
+                                    .then(function(data) {
+                                        if(!data[0].length) { // recursive end
+                                            return data;
+                                        }
+                                
+                                        return get(data) // recursive call
+                                            .then(data => {
+                                                return data; // recursive call end
+                                            });
+                                    }, err => {
+                                        log.d(err);
+                                        common.returnOutput(params, []);
                                     });
+                                }
+        
+                                get(data).then(data => {
+                                    // result.steps = steps;
+                                    // let last = steps[steps.length - 1];
+                                    // result.success_users = last.users;
+                                    // result.success_rate = (result.success_users / result.users_in_first_step).toFixed(3) * 100;
+                                    // common.returnOutput(params, result);
+                                    common.returnOutput(params, []);
+                                });
                             }, err => {
+                                log.d(err);
                                 common.returnOutput(params, []);
                             });
-                        }
-
-                        get(data).then(data => {
-                            result.steps = steps;
-                            let last = steps[steps.length - 1];
-                            result.success_users = last.users;
-                            result.success_rate = (result.success_users / result.users_in_first_step).toFixed(3) * 100;
-                            common.returnOutput(params, result);
+                        }, err => {
+                            log.d(err);
+                            common.returnOutput(params, []);
                         });
-                    }, err => {
-                        common.returnOutput(params, []);
-                    });
-                }, err => {
-                    common.returnOutput(params, []);
+                    }
                 });
-                // }
             });
             return true;
         }
@@ -506,14 +808,14 @@ const log = require('../../../api/utils/log.js')('funnels:api');
             var checkProps = {
                 'funnel_name': { 'required': true, 'type': 'String', 'min-length': 1 },
                 'funnel_desc': { 'required': true, 'type': 'String', 'min-length': 1 },
-                'steps': { 'required': true, 'type': 'String', 'min-length': 2 },
-                'queries': { 'required': false, 'type': 'Array', 'min-length': 0 },
-                'queryTexts': { 'required': false, 'type': 'Array', 'min-length': 0 }
+                'steps': { 'required': true, 'type': 'String', 'min-length': 2 }
+                // 'queries': { 'required': false, 'type': 'Array', 'min-length': 0 },
+                // 'queryTexts': { 'required': false, 'type': 'Array', 'min-length': 0 }
             };
 
             if (!(common.validateArgs(funnel, checkProps))) {
                 common.returnMessage(params, 200, 'Not enough args');
-                return true;
+                return false;
             }
 
             if (funnelId) {

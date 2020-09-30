@@ -21,6 +21,7 @@ if (cluster.isMaster) {
         log.w('API AND FRONTEND DATABASE CONFIGS ARE DIFFERENT');
     }
     common.db = plugins.dbConnection();
+    common.redis = plugins.redisConnection(countlyConfig);
     t.push("master");
     t.push("node");
     t.push(process.argv[1]);
@@ -108,8 +109,8 @@ plugins.setConfigs("api", {
  * Set Plugins APPs Config
  */
 plugins.setConfigs("apps", {
-    country: "TR",
-    timezone: "Europe/Istanbul",
+    country: "CN",
+    timezone: "Asia/Shanghai",
     category: "6"
 });
 
@@ -247,6 +248,7 @@ if (cluster.isMaster) {
         jobs.job('api:clearTokens').replace().schedule('every 1 day');
         jobs.job('api:clearAutoTasks').replace().schedule('every 1 day');
         jobs.job('api:task').replace().schedule('every 5 minutes');
+        jobs.job('api:redis').replace().schedule('every 1 hours');
         jobs.job('api:userMerge').replace().schedule('every 1 hour on the 10th min');
     }, 10000);
 }
@@ -254,6 +256,7 @@ else {
     console.log("Starting worker", process.pid, "parent:", process.ppid);
     const taskManager = require('./utils/taskmanager.js');
     common.db = plugins.dbConnection(countlyConfig);
+    common.redis = plugins.redisConnection(countlyConfig);
 
     common.cache = new CacheWorker(common.db);
     common.cache.start();

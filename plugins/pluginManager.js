@@ -1,6 +1,7 @@
 var plugins = require('./plugins.json', 'dont-enclose'),
     pluginsApis = {},
     mongo = require('mongoskin'),
+    Redis = require('ioredis'),
     cluster = require('cluster'),
     countlyConfig = require('../frontend/express/config', 'dont-enclose'),
     utils = require('../api/utils/utils.js'),
@@ -1673,6 +1674,32 @@ var pluginManager = function pluginManager() {
         return countlyDb;
     };
 
+    this.redisConnection= function(config) {
+        if (typeof config === "string") {
+            db = config;
+            if (this.dbConfigFiles[config]) {
+                try {
+                    //try loading custom config file
+                    var conf = require(this.dbConfigFiles[config]);
+                    config = JSON.parse(JSON.stringify(conf));
+                }
+                catch (ex) {
+                    //user default config
+                    config = JSON.parse(JSON.stringify(countlyConfig));
+                }
+            }
+            else {
+                //user default config
+                config = JSON.parse(JSON.stringify(countlyConfig));
+            }
+        }
+        else {
+            config = config || JSON.parse(JSON.stringify(countlyConfig));
+        }
+
+        var redis = new Redis(config.redis.port, config.redis.host, config.redis.dbOptions);
+        return redis;
+    }
     var getObjectDiff = function (current, provided) {
         var toReturn = {};
 
