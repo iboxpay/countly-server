@@ -516,7 +516,7 @@ exports.dbUserHasAccessToCollection = function(params, collection, callback) {
         }
     }
     var appList = [];
-    if (collection.indexOf("events") === 0 || collection.indexOf("drill_events") === 0) {
+    if (collection.indexOf("events") === 0 || collection.indexOf("drill_events") === 0 || collection.indexOf("mr_events") === 0) {
         for (let i = 0; i < apps.length; i++) {
             if (apps[i].length) {
                 appList.push({_id: apps[i]});
