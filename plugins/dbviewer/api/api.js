@@ -1,6 +1,7 @@
 var common = require('../../../api/utils/common.js'),
     async = require('async'),
     plugins = require('../../pluginManager.js'),
+    mrDb = plugins.dbConnection("countly_mr"),
     countlyFs = require('../../../api/utils/countlyFs.js'),
     _ = require('underscore'),
     taskManager = require('../../../api/utils/taskmanager.js'),
@@ -9,7 +10,7 @@ var common = require('../../../api/utils/common.js'),
 
 (function() {
     plugins.register("/o/db", function(ob) {
-        var dbs = {countly: common.db, countly_drill: common.drillDb, countly_out: common.outDb, countly_fs: countlyFs.gridfs.getHandler()};
+        var dbs = {countly: common.db, countly_drill: common.drillDb, countly_mr: mrDb, countly_out: common.outDb, countly_fs: countlyFs.gridfs.getHandler()};
         var params = ob.params;
         var dbNameOnParam = params.qstring.dbs || params.qstring.db;
 
@@ -391,6 +392,10 @@ var common = require('../../../api/utils/common.js'),
         }
         else if (name.indexOf("drill_events") === 0) {
             eventHash = name.substring(12);
+            isEvent = true;
+        }
+        else if (name.indexOf("mr_events") === 0) {
+            eventHash = name.substring(9);
             isEvent = true;
         }
         else if (name.indexOf("app_viewdata") === 0) {
