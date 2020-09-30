@@ -84,14 +84,15 @@ var log = function(level, prefix, enabled, outer, out, styler) {
                 styles.moduleColors[prefix] = color;
             }
             color = styles.colors[color];
+            var date = new Date(+new Date() + 8 * 3600 * 1000);
             if (styler) {
-                args[0] = new Date().toISOString() + ': ' + level + '\t' + '[' + (prefix || '') + ']\t' + args[0];
+                args[0] = date.toISOString() + ': ' + level + '\t' + '[' + (prefix || '') + ']\t' + args[0];
                 styler(args);
             }
             else {
-                args[0] = (new Date().toISOString() + ': ' + level + '\t').gray + colors[color]('[' + (prefix || '') + ']\t') + args[0];
+                args[0] = (date.toISOString() + ': ' + level + '\t').gray + colors[color]('[' + (prefix || '') + ']\t') + args[0];
             }
-            // args[0] = (new Date().toISOString() + ': ' + (prefix || '')).gray + args[0];
+            // args[0] = (date.toISOString() + ': ' + (prefix || '')).gray + args[0];
             // console.log('Logging %j', args);
             if (typeof out === 'function') {
                 out.apply(outer, args);
